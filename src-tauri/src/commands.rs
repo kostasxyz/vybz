@@ -1,3 +1,4 @@
+use std::process::Command;
 use tauri::{ipc::Channel, State};
 
 use crate::pty_manager::PtyManager;
@@ -38,4 +39,13 @@ pub fn kill_terminal(
     session_id: String,
 ) -> Result<(), String> {
     state.kill_session(&session_id)
+}
+
+#[tauri::command]
+pub fn open_in_editor(editor: String, path: String) -> Result<(), String> {
+    Command::new(&editor)
+        .arg(&path)
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("Failed to open {}: {}", editor, e))
 }

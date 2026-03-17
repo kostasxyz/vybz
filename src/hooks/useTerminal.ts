@@ -4,13 +4,20 @@ import { FitAddon } from "@xterm/addon-fit";
 import { invoke, Channel } from "@tauri-apps/api/core";
 import "@xterm/xterm/css/xterm.css";
 
+interface UseTerminalOptions {
+  command?: string;
+  fontSize?: number;
+}
+
 export function useTerminal(
   containerRef: React.RefObject<HTMLDivElement | null>,
   cwd: string,
   active: boolean,
+  options?: UseTerminalOptions,
 ) {
   const fitAddonRef = useRef<FitAddon | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const termRef = useRef<Terminal | null>(null);
 
   // Spawn terminal on mount
   useEffect(() => {
@@ -20,7 +27,7 @@ export function useTerminal(
 
     const term = new Terminal({
       cursorBlink: true,
-      fontSize: 14,
+      fontSize: options?.fontSize ?? 15,
       fontFamily: 'Menlo, Monaco, "Courier New", monospace',
       theme: {
         background: "#1e1e1e",
@@ -34,6 +41,7 @@ export function useTerminal(
     term.open(container);
     fitAddon.fit();
     fitAddonRef.current = fitAddon;
+    termRef.current = term;
 
     const onData = new Channel<number[]>();
     onData.onmessage = (data) => {
@@ -62,6 +70,17 @@ export function useTerminal(
       term.onResize(({ cols, rows }) => {
         invoke("resize_terminal", { sessionId: id, cols, rows });
       });
+
+      // Auto-run command after shell initializes
+      if (options?.command) {
+        const cmd = options.command;
+        setTimeout(() => {
+          if (alive && sessionIdRef.current) {
+            const bytes = Array.from(new TextEncoder().encode(cmd));
+            invoke("write_to_terminal", { sessionId: sessionIdRef.current, data: bytes });
+          }
+        }, 200);
+      }
     });
 
     const resizeObserver = new ResizeObserver(() => {
@@ -77,8 +96,18 @@ export function useTerminal(
       }
       term.dispose();
       fitAddonRef.current = null;
+      termRef.current = null;
     };
   }, [cwd]);
+
+  // Reactive font size updates (no respawn)
+  useEffect(() => {
+    const term = termRef.current;
+    if (term && options?.fontSize) {
+      term.options.fontSize = options.fontSize;
+      fitAddonRef.current?.fit();
+    }
+  }, [options?.fontSize]);
 
   // Re-fit when becoming active (container goes from display:none to block)
   useEffect(() => {
