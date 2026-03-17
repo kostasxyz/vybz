@@ -18,19 +18,44 @@ function readThemeVariable(name: string, fallback: string) {
 }
 
 function syncTerminalAppearance(term: Terminal) {
+  const background = readThemeVariable("--terminal-background", "#1e1e1e");
   const foreground = readThemeVariable("--terminal-foreground", "#d4d4d4");
   const selectionBackground = readThemeVariable(
-    "--surface-active",
-    "rgba(128, 128, 128, 0.28)",
+    "--terminal-selection-background",
+    readThemeVariable("--surface-active", "rgba(128, 128, 128, 0.28)"),
+  );
+  const selectionInactiveBackground = readThemeVariable(
+    "--terminal-selection-inactive-background",
+    selectionBackground,
   );
 
   term.options.fontFamily = readThemeVariable("--font-mono", FALLBACK_TERMINAL_FONT);
   term.options.theme = {
-    background: readThemeVariable("--terminal-background", "#1e1e1e"),
+    background,
     foreground,
     cursor: readThemeVariable("--terminal-cursor", foreground),
+    cursorAccent: readThemeVariable("--terminal-cursor-accent", background),
     selectionBackground,
-    selectionInactiveBackground: selectionBackground,
+    selectionInactiveBackground,
+    black: readThemeVariable("--terminal-ansi-black", "#000000"),
+    red: readThemeVariable("--terminal-ansi-red", "#cd3131"),
+    green: readThemeVariable("--terminal-ansi-green", "#0dbc79"),
+    yellow: readThemeVariable("--terminal-ansi-yellow", "#e5e510"),
+    blue: readThemeVariable("--terminal-ansi-blue", "#2472c8"),
+    magenta: readThemeVariable("--terminal-ansi-magenta", "#bc3fbc"),
+    cyan: readThemeVariable("--terminal-ansi-cyan", "#11a8cd"),
+    white: readThemeVariable("--terminal-ansi-white", "#e5e5e5"),
+    brightBlack: readThemeVariable("--terminal-ansi-bright-black", "#666666"),
+    brightRed: readThemeVariable("--terminal-ansi-bright-red", "#f14c4c"),
+    brightGreen: readThemeVariable("--terminal-ansi-bright-green", "#23d18b"),
+    brightYellow: readThemeVariable("--terminal-ansi-bright-yellow", "#f5f543"),
+    brightBlue: readThemeVariable("--terminal-ansi-bright-blue", "#3b8eea"),
+    brightMagenta: readThemeVariable(
+      "--terminal-ansi-bright-magenta",
+      "#d670d6",
+    ),
+    brightCyan: readThemeVariable("--terminal-ansi-bright-cyan", "#29b8db"),
+    brightWhite: readThemeVariable("--terminal-ansi-bright-white", "#ffffff"),
   };
 
   term.refresh(0, Math.max(term.rows - 1, 0));
@@ -176,7 +201,12 @@ export function useTerminal(
     });
     themeObserver.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ["class", "data-theme-mode", "data-theme-template"],
+      attributeFilter: [
+        "class",
+        "data-theme-mode",
+        "data-theme-template",
+        "data-terminal-theme",
+      ],
     });
 
     return () => {

@@ -5,6 +5,25 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
+  --terminal-selection-background: rgba(128, 128, 128, 0.28);
+  --terminal-selection-inactive-background: rgba(128, 128, 128, 0.2);
+  --terminal-cursor-accent: #1e1e1e;
+  --terminal-ansi-black: #000000;
+  --terminal-ansi-red: #cd3131;
+  --terminal-ansi-green: #0dbc79;
+  --terminal-ansi-yellow: #e5e510;
+  --terminal-ansi-blue: #2472c8;
+  --terminal-ansi-magenta: #bc3fbc;
+  --terminal-ansi-cyan: #11a8cd;
+  --terminal-ansi-white: #e5e5e5;
+  --terminal-ansi-bright-black: #666666;
+  --terminal-ansi-bright-red: #f14c4c;
+  --terminal-ansi-bright-green: #23d18b;
+  --terminal-ansi-bright-yellow: #f5f543;
+  --terminal-ansi-bright-blue: #3b8eea;
+  --terminal-ansi-bright-magenta: #d670d6;
+  --terminal-ansi-bright-cyan: #29b8db;
+  --terminal-ansi-bright-white: #ffffff;
 }
 
 :root[data-theme-template="native"] {
@@ -355,6 +374,149 @@
   --terminal-background: var(--card);
   --terminal-foreground: var(--foreground);
   --terminal-cursor: var(--primary);
+}
+
+:root[data-terminal-theme="match-ui"] {
+  --terminal-selection-background: rgba(4, 81, 165, 0.18);
+  --terminal-selection-inactive-background: rgba(95, 107, 122, 0.16);
+  --terminal-cursor-accent: var(--terminal-background);
+  --terminal-ansi-black: #000000;
+  --terminal-ansi-red: #cd3131;
+  --terminal-ansi-green: #00bc00;
+  --terminal-ansi-yellow: #949800;
+  --terminal-ansi-blue: #0451a5;
+  --terminal-ansi-magenta: #bc05bc;
+  --terminal-ansi-cyan: #0598bc;
+  --terminal-ansi-white: #555555;
+  --terminal-ansi-bright-black: #666666;
+  --terminal-ansi-bright-red: #cd3131;
+  --terminal-ansi-bright-green: #14ce14;
+  --terminal-ansi-bright-yellow: #b5ba00;
+  --terminal-ansi-bright-blue: #0451a5;
+  --terminal-ansi-bright-magenta: #bc05bc;
+  --terminal-ansi-bright-cyan: #0598bc;
+  --terminal-ansi-bright-white: #a5a5a5;
+}
+
+:root[data-terminal-theme="match-ui"].dark {
+  --terminal-selection-background: rgba(36, 114, 200, 0.28);
+  --terminal-selection-inactive-background: rgba(102, 102, 102, 0.22);
+  --terminal-ansi-black: #000000;
+  --terminal-ansi-red: #cd3131;
+  --terminal-ansi-green: #0dbc79;
+  --terminal-ansi-yellow: #e5e510;
+  --terminal-ansi-blue: #2472c8;
+  --terminal-ansi-magenta: #bc3fbc;
+  --terminal-ansi-cyan: #11a8cd;
+  --terminal-ansi-white: #e5e5e5;
+  --terminal-ansi-bright-black: #666666;
+  --terminal-ansi-bright-red: #f14c4c;
+  --terminal-ansi-bright-green: #23d18b;
+  --terminal-ansi-bright-yellow: #f5f543;
+  --terminal-ansi-bright-blue: #3b8eea;
+  --terminal-ansi-bright-magenta: #d670d6;
+  --terminal-ansi-bright-cyan: #29b8db;
+  --terminal-ansi-bright-white: #ffffff;
+}
+
+:root[data-terminal-theme="night-owl"] {
+  --terminal-background: #011627;
+  --terminal-foreground: #d6deeb;
+  --terminal-cursor: #80a4c2;
+  --terminal-cursor-accent: #011627;
+  --terminal-selection-background: rgba(29, 59, 83, 0.55);
+  --terminal-selection-inactive-background: rgba(29, 59, 83, 0.36);
+  --terminal-ansi-black: #011627;
+  --terminal-ansi-red: #ef5350;
+  --terminal-ansi-green: #22da6e;
+  --terminal-ansi-yellow: #c5e478;
+  --terminal-ansi-blue: #82aaff;
+  --terminal-ansi-magenta: #c792ea;
+  --terminal-ansi-cyan: #21c7a8;
+  --terminal-ansi-white: #ffffff;
+  --terminal-ansi-bright-black: #575656;
+  --terminal-ansi-bright-red: #ff5874;
+  --terminal-ansi-bright-green: #7fdbca;
+  --terminal-ansi-bright-yellow: #ecc48d;
+  --terminal-ansi-bright-blue: #82aaff;
+  --terminal-ansi-bright-magenta: #ae81ff;
+  --terminal-ansi-bright-cyan: #21c7a8;
+  --terminal-ansi-bright-white: #ffffff;
+}
+
+:root[data-terminal-theme="solarized-light"] {
+  --terminal-background: #fdf6e3;
+  --terminal-foreground: #657b83;
+  --terminal-cursor: #586e75;
+  --terminal-cursor-accent: #fdf6e3;
+  --terminal-selection-background: rgba(88, 110, 117, 0.24);
+  --terminal-selection-inactive-background: rgba(88, 110, 117, 0.16);
+  --terminal-ansi-black: #073642;
+  --terminal-ansi-red: #dc322f;
+  --terminal-ansi-green: #859900;
+  --terminal-ansi-yellow: #b58900;
+  --terminal-ansi-blue: #268bd2;
+  --terminal-ansi-magenta: #d33682;
+  --terminal-ansi-cyan: #2aa198;
+  --terminal-ansi-white: #eee8d5;
+  --terminal-ansi-bright-black: #002b36;
+  --terminal-ansi-bright-red: #cb4b16;
+  --terminal-ansi-bright-green: #586e75;
+  --terminal-ansi-bright-yellow: #657b83;
+  --terminal-ansi-bright-blue: #839496;
+  --terminal-ansi-bright-magenta: #6c71c4;
+  --terminal-ansi-bright-cyan: #93a1a1;
+  --terminal-ansi-bright-white: #fdf6e3;
+}
+
+:root[data-terminal-theme="solarized-dark"] {
+  --terminal-background: #002b36;
+  --terminal-foreground: #839496;
+  --terminal-cursor: #93a1a1;
+  --terminal-cursor-accent: #002b36;
+  --terminal-selection-background: rgba(147, 161, 161, 0.2);
+  --terminal-selection-inactive-background: rgba(147, 161, 161, 0.12);
+  --terminal-ansi-black: #073642;
+  --terminal-ansi-red: #dc322f;
+  --terminal-ansi-green: #859900;
+  --terminal-ansi-yellow: #b58900;
+  --terminal-ansi-blue: #268bd2;
+  --terminal-ansi-magenta: #d33682;
+  --terminal-ansi-cyan: #2aa198;
+  --terminal-ansi-white: #eee8d5;
+  --terminal-ansi-bright-black: #002b36;
+  --terminal-ansi-bright-red: #cb4b16;
+  --terminal-ansi-bright-green: #586e75;
+  --terminal-ansi-bright-yellow: #657b83;
+  --terminal-ansi-bright-blue: #839496;
+  --terminal-ansi-bright-magenta: #6c71c4;
+  --terminal-ansi-bright-cyan: #93a1a1;
+  --terminal-ansi-bright-white: #fdf6e3;
+}
+
+:root[data-terminal-theme="tokyo-night"] {
+  --terminal-background: #1a1b26;
+  --terminal-foreground: #c0caf5;
+  --terminal-cursor: #bb9af7;
+  --terminal-cursor-accent: #1a1b26;
+  --terminal-selection-background: rgba(122, 162, 247, 0.22);
+  --terminal-selection-inactive-background: rgba(122, 162, 247, 0.14);
+  --terminal-ansi-black: #15161e;
+  --terminal-ansi-red: #f7768e;
+  --terminal-ansi-green: #9ece6a;
+  --terminal-ansi-yellow: #e0af68;
+  --terminal-ansi-blue: #7aa2f7;
+  --terminal-ansi-magenta: #bb9af7;
+  --terminal-ansi-cyan: #7dcfff;
+  --terminal-ansi-white: #a9b1d6;
+  --terminal-ansi-bright-black: #414868;
+  --terminal-ansi-bright-red: #f7768e;
+  --terminal-ansi-bright-green: #9ece6a;
+  --terminal-ansi-bright-yellow: #e0af68;
+  --terminal-ansi-bright-blue: #7aa2f7;
+  --terminal-ansi-bright-magenta: #bb9af7;
+  --terminal-ansi-bright-cyan: #7dcfff;
+  --terminal-ansi-bright-white: #c0caf5;
 }
 
 html,

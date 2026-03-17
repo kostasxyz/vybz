@@ -30,6 +30,7 @@ const initialState: AppState = {
   terminalFontSize: 15,
   themeMode: initialThemeSettings.themeMode,
   themeTemplate: initialThemeSettings.themeTemplate,
+  terminalTheme: initialThemeSettings.terminalTheme,
   view: "terminals",
 };
 
@@ -239,6 +240,10 @@ function reducer(state: AppState, action: Action): AppState {
       return state.themeTemplate === action.template
         ? state
         : { ...state, themeTemplate: action.template };
+    case "SET_TERMINAL_THEME":
+      return state.terminalTheme === action.terminalTheme
+        ? state
+        : { ...state, terminalTheme: action.terminalTheme };
     case "SET_VIEW":
       return state.view === action.view ? state : { ...state, view: action.view };
     default:
@@ -255,6 +260,7 @@ function toPersistedState(state: AppState): PersistedState {
     terminalFontSize: state.terminalFontSize,
     themeMode: state.themeMode,
     themeTemplate: state.themeTemplate,
+    terminalTheme: state.terminalTheme,
   };
 }
 
@@ -363,10 +369,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     let lastResolvedMode = "";
 
     const syncTheme = () => {
-      const { themeMode, themeTemplate } = store.getState();
-      const themeSettings = { themeMode, themeTemplate };
+      const { themeMode, themeTemplate, terminalTheme } = store.getState();
+      const themeSettings = { themeMode, themeTemplate, terminalTheme };
       const resolvedMode = resolveThemeMode(themeMode, mediaQuery.matches);
-      const themeKey = `${themeTemplate}:${themeMode}`;
+      const themeKey = `${themeTemplate}:${themeMode}:${terminalTheme}`;
 
       if (themeKey === lastThemeKey && resolvedMode === lastResolvedMode) {
         return;

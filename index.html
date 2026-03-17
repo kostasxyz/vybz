@@ -2,6 +2,7 @@
 <html
   lang="en"
   data-theme-template="native"
+  data-terminal-theme="match-ui"
   data-theme-mode="dark"
   class="dark"
 >
@@ -15,6 +16,7 @@
         const defaults = {
           themeMode: "dark",
           themeTemplate: "native",
+          terminalTheme: "match-ui",
         };
 
         try {
@@ -33,6 +35,14 @@
             parsed?.themeTemplate === "solar-dusk"
               ? parsed.themeTemplate
               : defaults.themeTemplate;
+          const terminalTheme =
+            parsed?.terminalTheme === "match-ui" ||
+            parsed?.terminalTheme === "night-owl" ||
+            parsed?.terminalTheme === "solarized-light" ||
+            parsed?.terminalTheme === "solarized-dark" ||
+            parsed?.terminalTheme === "tokyo-night"
+              ? parsed.terminalTheme
+              : defaults.terminalTheme;
           const prefersDark =
             themeMode === "system"
               ? window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -41,6 +51,7 @@
           const root = document.documentElement;
 
           root.dataset.themeTemplate = themeTemplate;
+          root.dataset.terminalTheme = terminalTheme;
           root.dataset.themeMode = resolvedMode;
           root.classList.toggle("dark", resolvedMode === "dark");
           root.style.colorScheme = resolvedMode;

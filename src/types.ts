@@ -1,4 +1,4 @@
-import type { ThemeMode, ThemeTemplateId } from "./themes";
+import type { TerminalThemeId, ThemeMode, ThemeTemplateId } from "./themes";
 
 export const PROJECT_COLORS = [
   "#e06c75", "#e5c07b", "#98c379", "#56b6c2",
@@ -38,6 +38,7 @@ export interface AppState {
   terminalFontSize: number;
   themeMode: ThemeMode;
   themeTemplate: ThemeTemplateId;
+  terminalTheme: TerminalThemeId;
   view: "terminals" | "settings" | "project-settings";
 }
 
@@ -58,4 +59,5 @@ export type Action =
   | { type: "SET_TERMINAL_FONT_SIZE"; size: number }
   | { type: "SET_THEME_MODE"; mode: ThemeMode }
   | { type: "SET_THEME_TEMPLATE"; template: ThemeTemplateId }
+  | { type: "SET_TERMINAL_THEME"; terminalTheme: TerminalThemeId }
   | { type: "SET_VIEW"; view: "terminals" | "settings" | "project-settings" };

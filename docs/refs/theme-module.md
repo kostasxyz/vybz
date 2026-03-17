@@ -6,6 +6,7 @@ Vybz uses a small, Tailwind-free theme system built around:
 
 - a persisted `themeTemplate`
 - a persisted `themeMode` (`system`, `light`, `dark`)
+- a persisted `terminalTheme`
 - CSS custom properties in `src/App.css`
 - an early `index.html` bootstrap to avoid a flash on launch
 
@@ -31,10 +32,10 @@ The current templates are:
   Runs a tiny bootstrap script before React mounts. It reads `vybz.theme` from localStorage, resolves `system` mode, and sets the root theme attributes/classes immediately.
 
 - `src/App.css`
-  Defines per-template light and dark variable blocks and consumes the semantic variables across the app chrome.
+  Defines per-template light and dark variable blocks, terminal palette overrides, and consumes the semantic variables across the app chrome.
 
 - `src/components/SettingsView.tsx`
-  Renders the mode switcher and template picker.
+  Renders the mode switcher, UI template picker, and terminal theme picker.
 
 - `src/hooks/useTerminal.ts`
   Reads terminal-related CSS variables and updates xterm when the theme changes.
@@ -46,10 +47,17 @@ Theme state shape:
 ```ts
 type ThemeMode = "system" | "light" | "dark";
 type ThemeTemplateId = "native" | "amber" | "t3chat" | "solar-dusk";
+type TerminalThemeId =
+  | "match-ui"
+  | "night-owl"
+  | "solarized-light"
+  | "solarized-dark"
+  | "tokyo-night";
 
 interface ThemeSettings {
   themeMode: ThemeMode;
   themeTemplate: ThemeTemplateId;
+  terminalTheme: TerminalThemeId;
 }
 ```
 
@@ -62,6 +70,7 @@ Resolved mode behavior:
 Document state applied by `applyThemeToDocument()`:
 
 - `document.documentElement.dataset.themeTemplate = "<template>"`
+- `document.documentElement.dataset.terminalTheme = "<terminal-theme>"`
 - `document.documentElement.dataset.themeMode = "<resolved-mode>"`
 - root `.dark` class toggled when resolved mode is dark
 - `color-scheme` set on the root
@@ -86,6 +95,11 @@ Every template defines two blocks:
 
 - `:root[data-theme-template="<id>"]`
 - `:root[data-theme-template="<id>"].dark`
+
+Dedicated terminal palettes define one block each:
+
+- `:root[data-terminal-theme="<id>"]`
+- optionally `:root[data-terminal-theme="<id>"].dark` when the palette should vary with UI mode
 
 The app chrome currently relies on these semantic tokens:
 
@@ -126,6 +140,25 @@ The app chrome currently relies on these semantic tokens:
 - `--terminal-background`
 - `--terminal-foreground`
 - `--terminal-cursor`
+- `--terminal-cursor-accent`
+- `--terminal-selection-background`
+- `--terminal-selection-inactive-background`
+- `--terminal-ansi-black`
+- `--terminal-ansi-red`
+- `--terminal-ansi-green`
+- `--terminal-ansi-yellow`
+- `--terminal-ansi-blue`
+- `--terminal-ansi-magenta`
+- `--terminal-ansi-cyan`
+- `--terminal-ansi-white`
+- `--terminal-ansi-bright-black`
+- `--terminal-ansi-bright-red`
+- `--terminal-ansi-bright-green`
+- `--terminal-ansi-bright-yellow`
+- `--terminal-ansi-bright-blue`
+- `--terminal-ansi-bright-magenta`
+- `--terminal-ansi-bright-cyan`
+- `--terminal-ansi-bright-white`
 - `--font-sans`
 - `--font-serif`
 - `--font-mono`
@@ -146,7 +179,10 @@ Current variables used by xterm:
 - `--terminal-background`
 - `--terminal-foreground`
 - `--terminal-cursor`
-- `--surface-active` for selection background
+- `--terminal-cursor-accent`
+- `--terminal-selection-background`
+- `--terminal-selection-inactive-background`
+- `--terminal-ansi-*`
 - `--font-mono`
 
 Theme changes are detected through a `MutationObserver` watching:
@@ -154,6 +190,7 @@ Theme changes are detected through a `MutationObserver` watching:
 - `class`
 - `data-theme-mode`
 - `data-theme-template`
+- `data-terminal-theme`
 
 ## Adding A New Template
 
@@ -169,6 +206,17 @@ Theme changes are detected through a `MutationObserver` watching:
 6. Define the full token set used by the app chrome and terminal.
 7. If the template depends on custom fonts, load those fonts separately.
    Setting `--font-sans` / `--font-mono` alone does not download them.
+
+## Adding A Terminal Theme
+
+1. Add the new ID to `TerminalThemeId` in `src/themes.ts`.
+2. Add a new entry to `TERMINAL_THEMES` in `src/themes.ts`.
+3. Extend `isTerminalThemeId()` in `src/themes.ts`.
+4. Extend the bootstrap allowlist in `index.html`.
+   If this step is skipped, the terminal palette will not restore correctly on app launch.
+5. Add a CSS block to `src/App.css`:
+   `:root[data-terminal-theme="<id>"]`
+6. Define the terminal tokens used by xterm for background, cursor, selection, and ANSI colors.
 
 ## Notes
 

@@ -1,6 +1,6 @@
 import { load } from "@tauri-apps/plugin-store";
 import { AppState } from "./types";
-import { DEFAULT_THEME_SETTINGS } from "./themes";
+import { DEFAULT_THEME_SETTINGS, normalizeThemeSettings } from "./themes";
 
 const STORE_FILE = "projects.json";
 
@@ -13,6 +13,7 @@ type PersistedState = Pick<
   | "terminalFontSize"
   | "themeMode"
   | "themeTemplate"
+  | "terminalTheme"
 >;
 
 const DEFAULT_PERSISTED_STATE: PersistedState = {
@@ -23,6 +24,7 @@ const DEFAULT_PERSISTED_STATE: PersistedState = {
   terminalFontSize: 15,
   themeMode: DEFAULT_THEME_SETTINGS.themeMode,
   themeTemplate: DEFAULT_THEME_SETTINGS.themeTemplate,
+  terminalTheme: DEFAULT_THEME_SETTINGS.terminalTheme,
 };
 
 let storePromise: ReturnType<typeof load> | null = null;
@@ -45,6 +47,7 @@ export async function loadPersistedState(): Promise<PersistedState> {
     terminalFontSize,
     themeMode,
     themeTemplate,
+    terminalTheme,
   ] =
     await Promise.all([
       store.get<PersistedState["projects"]>("projects"),
@@ -54,7 +57,14 @@ export async function loadPersistedState(): Promise<PersistedState> {
       store.get<PersistedState["terminalFontSize"]>("terminalFontSize"),
       store.get<PersistedState["themeMode"]>("themeMode"),
       store.get<PersistedState["themeTemplate"]>("themeTemplate"),
+      store.get<PersistedState["terminalTheme"]>("terminalTheme"),
     ]);
+
+  const normalizedThemeSettings = normalizeThemeSettings({
+    themeMode,
+    themeTemplate,
+    terminalTheme,
+  });
 
   return {
     projects: projects ?? DEFAULT_PERSISTED_STATE.projects,
@@ -63,8 +73,9 @@ export async function loadPersistedState(): Promise<PersistedState> {
     uiFontSize: uiFontSize ?? DEFAULT_PERSISTED_STATE.uiFontSize,
     terminalFontSize:
       terminalFontSize ?? DEFAULT_PERSISTED_STATE.terminalFontSize,
-    themeMode: themeMode ?? DEFAULT_PERSISTED_STATE.themeMode,
-    themeTemplate: themeTemplate ?? DEFAULT_PERSISTED_STATE.themeTemplate,
+    themeMode: normalizedThemeSettings.themeMode,
+    themeTemplate: normalizedThemeSettings.themeTemplate,
+    terminalTheme: normalizedThemeSettings.terminalTheme,
   };
 }
 
@@ -79,6 +90,7 @@ export async function savePersistedState(state: PersistedState): Promise<void> {
     store.set("terminalFontSize", state.terminalFontSize),
     store.set("themeMode", state.themeMode),
     store.set("themeTemplate", state.themeTemplate),
+    store.set("terminalTheme", state.terminalTheme),
   ]);
 
   await store.save();
