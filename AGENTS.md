@@ -43,7 +43,7 @@ When new reference docs are added under `docs/refs/`, update this index in the s
 State management uses **useReducer + React Context** — no external state library.
 
 - `types.ts` — Shared types: `Project`, `Tab`, `AppState`, `Action` (discriminated union). `ToolType` defines supported terminal tools; theme mode/template are part of app state.
-- `themes.ts` — Theme registry and helpers: template metadata, mode resolution, DOM application, and localStorage snapshot/bootstrap support.
+- `themes.ts` — Theme registry and helpers: UI template metadata, terminal theme metadata, mode resolution, DOM application, and localStorage snapshot/bootstrap support.
 - `context.tsx` — `AppProvider` wraps the app, holds the reducer, hydrates from store on mount, auto-persists app state, and applies the resolved theme to the document.
 - `store.ts` — Thin wrapper around `@tauri-apps/plugin-store`, all persisted UI/project state lives in a single `projects.json` store file.
 - `hooks/useTerminal.ts` — Manages xterm.js Terminal lifecycle: spawns PTY via Tauri IPC, bridges input/output through `Channel<Vec<u8>>`, handles resize via `ResizeObserver` + `FitAddon`, syncs xterm colors/fonts from CSS theme variables, and delays startup tool commands until shell output settles.
@@ -56,7 +56,7 @@ Components:
 - `TerminalPanels.tsx` — Renders all `TerminalView`s and keeps them mounted while toggling visibility by active tab/view
 - `TabBar.tsx` — Tab strip + dropdowns for tool selection, editor launch, and per-project command runner. Exports `TOOL_COMMANDS` map.
 - `TerminalView.tsx` — Thin wrapper: ref container → `useTerminal` hook
-- `SettingsView.tsx` — Appearance controls: theme mode, theme template selection, and UI font size
+- `SettingsView.tsx` — Appearance controls: theme mode, UI template selection, terminal theme selection, and UI font size
 - `ProjectSettingsView.tsx` — Per-project custom command management
 
 ### Backend (`src-tauri/src/`)
@@ -73,7 +73,7 @@ Terminal data flows as `Vec<u8>` (byte arrays). Frontend uses `@tauri-apps/api/c
 
 - Styling lives in `src/App.css` and is driven by CSS custom properties; theme templates are registered in `src/themes.ts`
 - Theme application uses both the Tauri store and a small `localStorage` snapshot (`vybz.theme`) so the selected template/mode applies before React hydrates
-- Theme templates must define both light and dark variable blocks in `src/App.css`; see `docs/refs/theme-module.md` for the token contract and add-template checklist
+- Theme templates must define both light and dark variable blocks in `src/App.css`, while terminal themes define separate `--terminal-*` palette blocks; see `docs/refs/theme-module.md` for the token contract and add-template checklist
 - Icons from `@lobehub/icons` (AI tool logos) + inline SVGs
 - Tab IDs generated via timestamp counter, project IDs via `crypto.randomUUID()`
 - Terminal sessions identified by UUID v4 (Rust side)

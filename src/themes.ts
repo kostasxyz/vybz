@@ -1,10 +1,15 @@
-export type ThemeTemplateId = "native" | "amber" | "t3chat" | "solar-dusk";
+export type ThemeTemplateId =
+  | "native"
+  | "amber"
+  | "t3chat"
+  | "solar-dusk"
+  | "synthwave";
 export type TerminalThemeId =
-  | "match-ui"
   | "night-owl"
   | "solarized-light"
   | "solarized-dark"
-  | "tokyo-night";
+  | "tokyo-night"
+  | "synthwave";
 export type ThemeMode = "system" | "light" | "dark";
 export type ResolvedThemeMode = Exclude<ThemeMode, "system">;
 
@@ -41,7 +46,7 @@ export const THEME_STORAGE_KEY = "vybz.theme";
 export const DEFAULT_THEME_SETTINGS: ThemeSettings = {
   themeMode: "dark",
   themeTemplate: "native",
-  terminalTheme: "match-ui",
+  terminalTheme: "night-owl",
 };
 
 export const THEME_TEMPLATES: ThemeTemplateDefinition[] = [
@@ -85,19 +90,19 @@ export const THEME_TEMPLATES: ThemeTemplateDefinition[] = [
       accent: "oklch(0.7049 0.1867 47.6044)",
     },
   },
+  {
+    id: "synthwave",
+    name: "Synthwave",
+    description: "Neon pinks and cyan accents over pastel days and violet nights.",
+    preview: {
+      light: "#f7e9ff",
+      dark: "#140d22",
+      accent: "#ff4fd8",
+    },
+  },
 ];
 
 export const TERMINAL_THEMES: TerminalThemeDefinition[] = [
-  {
-    id: "match-ui",
-    name: "Match UI",
-    description: "Keeps the terminal tied to the current Vybz template and mode.",
-    preview: {
-      background: "linear-gradient(135deg, #1e1e1e, #333333)",
-      foreground: "#d4d4d4",
-      accent: "#007acc",
-    },
-  },
   {
     id: "night-owl",
     name: "Night Owl",
@@ -138,6 +143,16 @@ export const TERMINAL_THEMES: TerminalThemeDefinition[] = [
       accent: "#bb9af7",
     },
   },
+  {
+    id: "synthwave",
+    name: "Synthwave",
+    description: "Retro-futurist neon with a high-contrast purple terminal backdrop.",
+    preview: {
+      background: "#241b2f",
+      foreground: "#f7f2ff",
+      accent: "#ff7edb",
+    },
+  },
 ];
 
 export function isThemeMode(value: unknown): value is ThemeMode {
@@ -149,17 +164,18 @@ export function isThemeTemplateId(value: unknown): value is ThemeTemplateId {
     value === "native" ||
     value === "amber" ||
     value === "t3chat" ||
-    value === "solar-dusk"
+    value === "solar-dusk" ||
+    value === "synthwave"
   );
 }
 
 export function isTerminalThemeId(value: unknown): value is TerminalThemeId {
   return (
-    value === "match-ui" ||
     value === "night-owl" ||
     value === "solarized-light" ||
     value === "solarized-dark" ||
-    value === "tokyo-night"
+    value === "tokyo-night" ||
+    value === "synthwave"
   );
 }
 

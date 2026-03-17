@@ -2,7 +2,7 @@
 <html
   lang="en"
   data-theme-template="native"
-  data-terminal-theme="match-ui"
+  data-terminal-theme="night-owl"
   data-theme-mode="dark"
   class="dark"
 >
@@ -16,7 +16,7 @@
         const defaults = {
           themeMode: "dark",
           themeTemplate: "native",
-          terminalTheme: "match-ui",
+          terminalTheme: "night-owl",
         };
 
         try {
@@ -32,15 +32,16 @@
             parsed?.themeTemplate === "native" ||
             parsed?.themeTemplate === "amber" ||
             parsed?.themeTemplate === "t3chat" ||
-            parsed?.themeTemplate === "solar-dusk"
+            parsed?.themeTemplate === "solar-dusk" ||
+            parsed?.themeTemplate === "synthwave"
               ? parsed.themeTemplate
               : defaults.themeTemplate;
           const terminalTheme =
-            parsed?.terminalTheme === "match-ui" ||
             parsed?.terminalTheme === "night-owl" ||
             parsed?.terminalTheme === "solarized-light" ||
             parsed?.terminalTheme === "solarized-dark" ||
-            parsed?.terminalTheme === "tokyo-night"
+            parsed?.terminalTheme === "tokyo-night" ||
+            parsed?.terminalTheme === "synthwave"
               ? parsed.terminalTheme
               : defaults.terminalTheme;
           const prefersDark =

@@ -119,7 +119,7 @@ export function SettingsView() {
           <div className="settings-copy">
             <span className="settings-label">Terminal Theme</span>
             <span className="settings-help">
-              Keep terminals matched to the app, or pin a dedicated palette.
+              Choose a dedicated palette for terminals.
             </span>
           </div>
 

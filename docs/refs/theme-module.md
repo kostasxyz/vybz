@@ -16,11 +16,12 @@ The current templates are:
 - `amber`
 - `t3chat`
 - `solar-dusk`
+- `synthwave`
 
 ## Main Files
 
 - `src/themes.ts`
-  Holds theme IDs, template metadata, normalization helpers, mode resolution, DOM application, and the localStorage snapshot helpers.
+  Holds UI template IDs, terminal theme IDs, metadata, normalization helpers, mode resolution, DOM application, and the localStorage snapshot helpers.
 
 - `src/context.tsx`
   Seeds initial state from the localStorage snapshot, applies the resolved theme to the document, reacts to system light/dark changes, and persists theme settings through the normal app store flow.
@@ -32,7 +33,7 @@ The current templates are:
   Runs a tiny bootstrap script before React mounts. It reads `vybz.theme` from localStorage, resolves `system` mode, and sets the root theme attributes/classes immediately.
 
 - `src/App.css`
-  Defines per-template light and dark variable blocks, terminal palette overrides, and consumes the semantic variables across the app chrome.
+  Defines per-template light and dark variable blocks, dedicated terminal palette blocks, and consumes the semantic variables across the app chrome.
 
 - `src/components/SettingsView.tsx`
   Renders the mode switcher, UI template picker, and terminal theme picker.
@@ -46,13 +47,18 @@ Theme state shape:
 
 ```ts
 type ThemeMode = "system" | "light" | "dark";
-type ThemeTemplateId = "native" | "amber" | "t3chat" | "solar-dusk";
+type ThemeTemplateId =
+  | "native"
+  | "amber"
+  | "t3chat"
+  | "solar-dusk"
+  | "synthwave";
 type TerminalThemeId =
-  | "match-ui"
   | "night-owl"
   | "solarized-light"
   | "solarized-dark"
-  | "tokyo-night";
+  | "tokyo-night"
+  | "synthwave";
 
 interface ThemeSettings {
   themeMode: ThemeMode;
@@ -75,6 +81,13 @@ Document state applied by `applyThemeToDocument()`:
 - root `.dark` class toggled when resolved mode is dark
 - `color-scheme` set on the root
 
+Current behavior:
+
+- UI templates and terminal themes are independent selections.
+- `themeMode` currently affects only the UI template branch.
+- Terminal themes are currently dedicated palettes, not light/dark-aware pairs.
+- Changing `themeMode` does not change terminal colors unless a terminal theme later adds its own `.dark` override block.
+
 ## Persistence
 
 There are two persistence layers on purpose:
@@ -91,17 +104,23 @@ The app writes both whenever the theme changes.
 
 ## CSS Contract
 
-Every template defines two blocks:
+Every UI template defines two blocks:
 
 - `:root[data-theme-template="<id>"]`
 - `:root[data-theme-template="<id>"].dark`
 
-Dedicated terminal palettes define one block each:
+Dedicated terminal palettes define one block each and own the terminal color tokens:
 
 - `:root[data-terminal-theme="<id>"]`
 - optionally `:root[data-terminal-theme="<id>"].dark` when the palette should vary with UI mode
 
-The app chrome currently relies on these semantic tokens:
+Important separation:
+
+- UI template blocks should define app chrome tokens.
+- Terminal theme blocks should define terminal-only tokens.
+- UI template blocks should not override `--terminal-*` tokens unless the design intentionally re-couples UI and terminal theming.
+
+The UI chrome relies on these semantic tokens:
 
 - `--background`
 - `--foreground`
@@ -137,6 +156,12 @@ The app chrome currently relies on these semantic tokens:
 - `--text-on-accent`
 - `--shadow-popover`
 - `--shadow-floating`
+- `--font-sans`
+- `--font-serif`
+- `--font-mono`
+
+The terminal palette relies on these tokens:
+
 - `--terminal-background`
 - `--terminal-foreground`
 - `--terminal-cursor`
@@ -159,8 +184,6 @@ The app chrome currently relies on these semantic tokens:
 - `--terminal-ansi-bright-magenta`
 - `--terminal-ansi-bright-cyan`
 - `--terminal-ansi-bright-white`
-- `--font-sans`
-- `--font-serif`
 - `--font-mono`
 
 Base radius variables are shared at the top of `src/App.css`:
@@ -192,6 +215,8 @@ Theme changes are detected through a `MutationObserver` watching:
 - `data-theme-template`
 - `data-terminal-theme`
 
+Because the terminal hook re-reads CSS custom properties on attribute changes, changing either the UI template or terminal theme propagates immediately without recreating the xterm instance.
+
 ## Adding A New Template
 
 1. Add the new ID to `ThemeTemplateId` in `src/themes.ts`.
@@ -203,9 +228,10 @@ Theme changes are detected through a `MutationObserver` watching:
 5. Add two CSS blocks to `src/App.css`:
    `:root[data-theme-template="<id>"]`
    `:root[data-theme-template="<id>"].dark`
-6. Define the full token set used by the app chrome and terminal.
+6. Define the full token set used by the app chrome.
 7. If the template depends on custom fonts, load those fonts separately.
    Setting `--font-sans` / `--font-mono` alone does not download them.
+8. Do not set `--terminal-*` tokens in the UI template blocks unless the goal is to couple UI and terminal theming again.
 
 ## Adding A Terminal Theme
 
@@ -217,9 +243,11 @@ Theme changes are detected through a `MutationObserver` watching:
 5. Add a CSS block to `src/App.css`:
    `:root[data-terminal-theme="<id>"]`
 6. Define the terminal tokens used by xterm for background, cursor, selection, and ANSI colors.
+7. Add a `.dark` variant only if the terminal palette should intentionally react to `themeMode`.
 
 ## Notes
 
 - This system is intentionally independent from Tailwind.
 - The token naming shape is compatible with design-template imports, but the app itself is driven by plain CSS variables.
 - `native` dark mode is intended to preserve the original Vybz look as closely as possible.
+- `synthwave` is available as both a UI template and a terminal theme, but the two are still selected independently.
