@@ -1,14 +1,29 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+mod commands;
+mod pty_manager;
+
+use commands::{kill_terminal, resize_terminal, spawn_terminal, write_to_terminal};
+use pty_manager::PtyManager;
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
+        .manage(PtyManager::new())
+        .invoke_handler(tauri::generate_handler![
+            spawn_terminal,
+            write_to_terminal,
+            resize_terminal,
+            kill_terminal,
+        ])
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::Destroyed = event {
+                let manager: tauri::State<PtyManager> = window.state();
+                manager.kill_all();
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
