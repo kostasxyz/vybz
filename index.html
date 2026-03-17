@@ -1,10 +1,54 @@
 <!doctype html>
-<html lang="en">
+<html
+  lang="en"
+  data-theme-template="native"
+  data-theme-mode="dark"
+  class="dark"
+>
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vybz</title>
+    <script>
+      (() => {
+        const defaults = {
+          themeMode: "dark",
+          themeTemplate: "native",
+        };
+
+        try {
+          const raw = window.localStorage.getItem("vybz.theme");
+          const parsed = raw ? JSON.parse(raw) : null;
+          const themeMode =
+            parsed?.themeMode === "system" ||
+            parsed?.themeMode === "light" ||
+            parsed?.themeMode === "dark"
+              ? parsed.themeMode
+              : defaults.themeMode;
+          const themeTemplate =
+            parsed?.themeTemplate === "native" ||
+            parsed?.themeTemplate === "amber" ||
+            parsed?.themeTemplate === "t3chat" ||
+            parsed?.themeTemplate === "solar-dusk"
+              ? parsed.themeTemplate
+              : defaults.themeTemplate;
+          const prefersDark =
+            themeMode === "system"
+              ? window.matchMedia("(prefers-color-scheme: dark)").matches
+              : themeMode === "dark";
+          const resolvedMode = prefersDark ? "dark" : "light";
+          const root = document.documentElement;
+
+          root.dataset.themeTemplate = themeTemplate;
+          root.dataset.themeMode = resolvedMode;
+          root.classList.toggle("dark", resolvedMode === "dark");
+          root.style.colorScheme = resolvedMode;
+        } catch {
+          // Ignore bootstrap theme failures and let the app hydrate normally.
+        }
+      })();
+    </script>
   </head>
 
   <body>

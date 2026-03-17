@@ -1,10 +1,11 @@
-import { AppProvider, useApp } from "./context";
+import { AppProvider, useAppLoaded, useAppSelector } from "./context";
 import { Sidebar } from "./components/Sidebar";
 import { MainArea } from "./components/MainArea";
 import "./App.css";
 
 function AppShell() {
-  const { state, loaded } = useApp();
+  const loaded = useAppLoaded();
+  const uiFontSize = useAppSelector((state) => state.uiFontSize);
 
   if (!loaded) {
     return (
@@ -15,7 +16,7 @@ function AppShell() {
   }
 
   return (
-    <div className="app" style={{ fontSize: `${state.uiFontSize}px` }}>
+    <div className="app" style={{ fontSize: `${uiFontSize}px` }}>
       <Sidebar />
       <MainArea />
     </div>

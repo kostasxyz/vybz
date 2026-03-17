@@ -2,8 +2,12 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+const app = import.meta.env.DEV ? (
+  <App />
+) : (
   <React.StrictMode>
     <App />
-  </React.StrictMode>,
+  </React.StrictMode>
 );
+
+ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(app);

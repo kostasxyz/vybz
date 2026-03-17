@@ -1,3 +1,5 @@
+import type { ThemeMode, ThemeTemplateId } from "./themes";
+
 export const PROJECT_COLORS = [
   "#e06c75", "#e5c07b", "#98c379", "#56b6c2",
   "#61afef", "#c678dd", "#d19a66", "#be5046",
@@ -34,6 +36,8 @@ export interface AppState {
   activeTabId: string | null;
   uiFontSize: number;
   terminalFontSize: number;
+  themeMode: ThemeMode;
+  themeTemplate: ThemeTemplateId;
   view: "terminals" | "settings" | "project-settings";
 }
 
@@ -52,4 +56,6 @@ export type Action =
   | { type: "SET_ACTIVE_TAB"; tabId: string | null }
   | { type: "SET_UI_FONT_SIZE"; size: number }
   | { type: "SET_TERMINAL_FONT_SIZE"; size: number }
+  | { type: "SET_THEME_MODE"; mode: ThemeMode }
+  | { type: "SET_THEME_TEMPLATE"; template: ThemeTemplateId }
   | { type: "SET_VIEW"; view: "terminals" | "settings" | "project-settings" };

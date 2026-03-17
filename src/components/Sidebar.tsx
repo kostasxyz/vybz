@@ -1,10 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
-import { useApp } from "../context";
+import { useAppDispatch, useAppSelector } from "../context";
 import { PROJECT_COLORS } from "../types";
+import { ProjectColorPicker } from "./ProjectColorPicker";
 
 export function Sidebar() {
-  const { state, dispatch } = useApp();
+  const dispatch = useAppDispatch();
+  const projects = useAppSelector((state) => state.projects);
+  const activeProjectId = useAppSelector((state) => state.activeProjectId);
+  const view = useAppSelector((state) => state.view);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [colorPickerId, setColorPickerId] = useState<string | null>(null);
@@ -41,7 +45,7 @@ export function Sidebar() {
   }
 
   function selectProject(id: string) {
-    if (state.view !== "terminals") {
+    if (view !== "terminals") {
       dispatch({ type: "SET_VIEW", view: "terminals" });
     }
     dispatch({ type: "SET_ACTIVE_PROJECT", id });
@@ -68,7 +72,7 @@ export function Sidebar() {
   function toggleSettings() {
     dispatch({
       type: "SET_VIEW",
-      view: state.view === "settings" ? "terminals" : "settings",
+      view: view === "settings" ? "terminals" : "settings",
     });
   }
 
@@ -81,10 +85,10 @@ export function Sidebar() {
         </button>
       </div>
       <div className="project-list">
-        {state.projects.map((project) => (
+        {projects.map((project) => (
           <div
             key={project.id}
-            className={`project-item ${state.activeProjectId === project.id ? "active" : ""}`}
+            className={`project-item ${activeProjectId === project.id ? "active" : ""}`}
             onClick={() => selectProject(project.id)}
             onDoubleClick={(e) => startRename(project.id, project.name, e)}
           >
@@ -106,28 +110,14 @@ export function Sidebar() {
                     ref={colorPickerRef}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {PROJECT_COLORS.map((c) => (
-                      <button
-                        key={c}
-                        className={`color-swatch ${c === project.color ? "active" : ""}`}
-                        style={{ background: c }}
-                        onClick={() => {
-                          dispatch({ type: "SET_PROJECT_COLOR", id: project.id, color: c });
-                          setColorPickerId(null);
-                        }}
-                      />
-                    ))}
-                    <label className="color-custom-wrapper">
-                      <input
-                        type="color"
-                        className="color-custom-input"
-                        value={project.color || "#61afef"}
-                        onChange={(e) => {
-                          dispatch({ type: "SET_PROJECT_COLOR", id: project.id, color: e.target.value });
-                        }}
-                      />
-                      <span className="color-custom-label">Custom</span>
-                    </label>
+                    <ProjectColorPicker
+                      color={project.color || "#61afef"}
+                      presets={PROJECT_COLORS}
+                      onChange={(color) => {
+                        dispatch({ type: "SET_PROJECT_COLOR", id: project.id, color });
+                      }}
+                      onPresetSelect={() => setColorPickerId(null)}
+                    />
                   </div>
                 )}
               </div>
@@ -162,7 +152,7 @@ export function Sidebar() {
       </div>
       <div className="sidebar-footer">
         <button
-          className={`settings-btn ${state.view === "settings" ? "active" : ""}`}
+          className={`settings-btn ${view === "settings" ? "active" : ""}`}
           onClick={toggleSettings}
           title="Settings"
         >

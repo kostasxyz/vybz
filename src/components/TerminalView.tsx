@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { memo, useRef } from "react";
 import { useTerminal } from "../hooks/useTerminal";
 
 interface TerminalViewProps {
@@ -8,7 +8,12 @@ interface TerminalViewProps {
   terminalFontSize?: number;
 }
 
-export function TerminalView({ cwd, active, command, terminalFontSize }: TerminalViewProps) {
+export const TerminalView = memo(function TerminalView({
+  cwd,
+  active,
+  command,
+  terminalFontSize,
+}: TerminalViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   useTerminal(containerRef, cwd, active, { command, fontSize: terminalFontSize });
 
@@ -19,4 +24,4 @@ export function TerminalView({ cwd, active, command, terminalFontSize }: Termina
       style={{ display: active ? "block" : "none" }}
     />
   );
-}
+});

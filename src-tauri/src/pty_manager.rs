@@ -88,9 +88,7 @@ impl PtyManager {
     pub fn write_to_session(&self, id: &str, data: &[u8]) -> Result<(), String> {
         let mut sessions = self.sessions.lock().unwrap();
         let session = sessions.get_mut(id).ok_or("Session not found")?;
-        session.writer.write_all(data).map_err(|e| e.to_string())?;
-        session.writer.flush().map_err(|e| e.to_string())?;
-        Ok(())
+        session.writer.write_all(data).map_err(|e| e.to_string())
     }
 
     pub fn resize_session(&self, id: &str, cols: u16, rows: u16) -> Result<(), String> {

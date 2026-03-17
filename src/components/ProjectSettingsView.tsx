@@ -1,17 +1,20 @@
 import { useState } from "react";
-import { useApp } from "../context";
+import { useAppDispatch, useAppSelector } from "../context";
 import { ProjectCommand } from "../types";
 
 export function ProjectSettingsView() {
-  const { state, dispatch } = useApp();
-  const project = state.projects.find((p) => p.id === state.activeProjectId);
+  const dispatch = useAppDispatch();
+  const activeProjectId = useAppSelector((state) => state.activeProjectId);
+  const project = useAppSelector(
+    (state) => state.projects.find((item) => item.id === activeProjectId) ?? null,
+  );
   const [newName, setNewName] = useState("");
   const [newCmd, setNewCmd] = useState("");
 
   if (!project) {
     return (
       <div className="settings-view">
-        <p style={{ color: "#666" }}>Select a project first</p>
+        <p style={{ color: "var(--text-muted)" }}>Select a project first</p>
       </div>
     );
   }

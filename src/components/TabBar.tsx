@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { memo, useState, useRef, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Tab, ToolType, ProjectCommand } from "../types";
 import { ToolIcon } from "./ToolIcon";
@@ -12,6 +12,12 @@ const TOOL_COMMANDS: Record<ToolType, string | undefined> = {
 };
 
 const TOOL_TYPES: ToolType[] = ["Shell", "Claude", "Codex", "OpenCode", "Pi"];
+const COMMAND_TO_TOOL = new Map<string, ToolType>(
+  TOOL_TYPES.flatMap((tool) => {
+    const command = TOOL_COMMANDS[tool];
+    return command ? [[command, tool]] : [];
+  }),
+);
 
 const EDITORS = [
   { name: "Zed", cmd: "zed" },
@@ -34,7 +40,7 @@ interface TabBarProps {
   onProjectSettings: () => void;
 }
 
-export function TabBar({
+export const TabBar = memo(function TabBar({
   tabs, activeTabId, projectPath, projectCommands,
   onSelect, onClose, onAdd, onRename, onRunCommand, onProjectSettings,
 }: TabBarProps) {
@@ -90,10 +96,7 @@ export function TabBar({
   }
 
   function getToolType(tab: Tab): ToolType {
-    for (const [tool, cmd] of Object.entries(TOOL_COMMANDS)) {
-      if (tab.command === cmd) return tool as ToolType;
-    }
-    return "Shell";
+    return tab.command ? COMMAND_TO_TOOL.get(tab.command) ?? "Shell" : "Shell";
   }
 
   return (
@@ -240,6 +243,6 @@ export function TabBar({
       </div>
     </div>
   );
-}
+});
 
 export { TOOL_COMMANDS };
