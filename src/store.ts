@@ -1,6 +1,13 @@
 import { load } from "@tauri-apps/plugin-store";
-import { AppState } from "./types";
+import { AppState, EditorConfig } from "./types";
 import { DEFAULT_THEME_SETTINGS, normalizeThemeSettings } from "./themes";
+
+export const DEFAULT_EDITORS: EditorConfig[] = [
+  { id: "zed", name: "Zed", cmd: "zed", builtin: true, enabled: true },
+  { id: "code", name: "VS Code", cmd: "code", builtin: true, enabled: true },
+  { id: "cursor", name: "Cursor", cmd: "cursor", builtin: true, enabled: true },
+  { id: "antigravity", name: "Antigravity", cmd: "antigravity", builtin: true, enabled: true },
+];
 
 const STORE_FILE = "projects.json";
 
@@ -9,6 +16,7 @@ type PersistedState = Pick<
   | "projects"
   | "tabs"
   | "activeTabId"
+  | "editors"
   | "uiFontSize"
   | "terminalFontSize"
   | "themeMode"
@@ -20,6 +28,7 @@ const DEFAULT_PERSISTED_STATE: PersistedState = {
   projects: [],
   tabs: [],
   activeTabId: null,
+  editors: DEFAULT_EDITORS,
   uiFontSize: 14,
   terminalFontSize: 15,
   themeMode: DEFAULT_THEME_SETTINGS.themeMode,
@@ -43,6 +52,7 @@ export async function loadPersistedState(): Promise<PersistedState> {
     projects,
     tabs,
     activeTabId,
+    editors,
     uiFontSize,
     terminalFontSize,
     themeMode,
@@ -53,6 +63,7 @@ export async function loadPersistedState(): Promise<PersistedState> {
       store.get<PersistedState["projects"]>("projects"),
       store.get<PersistedState["tabs"]>("tabs"),
       store.get<PersistedState["activeTabId"]>("activeTabId"),
+      store.get<PersistedState["editors"]>("editors"),
       store.get<PersistedState["uiFontSize"]>("uiFontSize"),
       store.get<PersistedState["terminalFontSize"]>("terminalFontSize"),
       store.get<PersistedState["themeMode"]>("themeMode"),
@@ -70,6 +81,7 @@ export async function loadPersistedState(): Promise<PersistedState> {
     projects: projects ?? DEFAULT_PERSISTED_STATE.projects,
     tabs: tabs ?? DEFAULT_PERSISTED_STATE.tabs,
     activeTabId: activeTabId ?? DEFAULT_PERSISTED_STATE.activeTabId,
+    editors: editors ?? DEFAULT_PERSISTED_STATE.editors,
     uiFontSize: uiFontSize ?? DEFAULT_PERSISTED_STATE.uiFontSize,
     terminalFontSize:
       terminalFontSize ?? DEFAULT_PERSISTED_STATE.terminalFontSize,
@@ -86,6 +98,7 @@ export async function savePersistedState(state: PersistedState): Promise<void> {
     store.set("projects", state.projects),
     store.set("tabs", state.tabs),
     store.set("activeTabId", state.activeTabId),
+    store.set("editors", state.editors),
     store.set("uiFontSize", state.uiFontSize),
     store.set("terminalFontSize", state.terminalFontSize),
     store.set("themeMode", state.themeMode),

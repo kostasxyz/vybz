@@ -33,6 +33,7 @@ export function MainArea() {
   const projects = useAppSelector((state) => state.projects);
   const tabs = useAppSelector((state) => state.tabs);
   const terminalFontSize = useAppSelector((state) => state.terminalFontSize);
+  const editors = useAppSelector((state) => state.editors);
   const view = useAppSelector((state) => state.view);
 
   const projectPathsById = useMemo(() => {
@@ -257,6 +258,7 @@ export function MainArea() {
       {showTerminals && activeProjectId && activeProject && (
         <TabBar
           activeTabId={activeTabId}
+          editors={editors}
           onAdd={addTabForActiveProject}
           onClose={closeTab}
           onProjectSettings={openProjectSettings}

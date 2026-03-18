@@ -1,6 +1,7 @@
 import { memo, useState, useRef, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Tab, ToolType, ProjectCommand } from "../types";
+import { Tab, ToolType, ProjectCommand, EditorConfig } from "../types";
+import { EditorIcon } from "./EditorIcon";
 import { ToolIcon } from "./ToolIcon";
 
 const TOOL_COMMANDS: Record<ToolType, string | undefined> = {
@@ -19,19 +20,12 @@ const COMMAND_TO_TOOL = new Map<string, ToolType>(
   }),
 );
 
-const EDITORS = [
-  { name: "Zed", cmd: "zed" },
-  { name: "VS Code", cmd: "code" },
-  { name: "Cursor", cmd: "cursor" },
-  { name: "Antigravity", cmd: "antigravity" },
-  { name: "VSCodium", cmd: "codium" },
-] as const;
-
 interface TabBarProps {
   tabs: Tab[];
   activeTabId: string | null;
   projectPath: string;
   projectCommands: ProjectCommand[];
+  editors: EditorConfig[];
   onSelect: (tabId: string) => void;
   onClose: (tabId: string) => void;
   onAdd: (tool: ToolType) => void;
@@ -41,7 +35,7 @@ interface TabBarProps {
 }
 
 export const TabBar = memo(function TabBar({
-  tabs, activeTabId, projectPath, projectCommands,
+  tabs, activeTabId, projectPath, projectCommands, editors,
   onSelect, onClose, onAdd, onRename, onRunCommand, onProjectSettings,
 }: TabBarProps) {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -225,20 +219,32 @@ export const TabBar = memo(function TabBar({
               <line x1="10" y1="14" x2="21" y2="3" />
             </svg>
           </button>
-          {openDropdown === "editors" && (
-            <div className="tool-dropdown">
-              {EDITORS.map((editor) => (
-                <div
-                  key={editor.cmd}
-                  className="tool-dropdown-item"
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={() => openEditor(editor.cmd)}
-                >
-                  {editor.name}
-                </div>
-              ))}
-            </div>
-          )}
+          {openDropdown === "editors" && (() => {
+            const enabled = editors.filter((e) => e.enabled !== false);
+            return (
+              <div className="tool-dropdown">
+                {enabled.length === 0 ? (
+                  <div className="tool-dropdown-item tool-dropdown-empty" onMouseDown={(e) => e.stopPropagation()}>
+                    No editors enabled
+                  </div>
+                ) : (
+                  enabled.map((editor) => (
+                    <div
+                      key={editor.id}
+                      className="tool-dropdown-item"
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={() => openEditor(editor.cmd)}
+                    >
+                      <span className="tool-dropdown-icon">
+                        <EditorIcon cmd={editor.cmd} iconUrl={editor.iconUrl} size={16} />
+                      </span>
+                      {editor.name}
+                    </div>
+                  ))
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>

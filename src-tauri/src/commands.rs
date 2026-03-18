@@ -43,7 +43,11 @@ pub fn kill_terminal(
 
 #[tauri::command]
 pub fn open_in_editor(editor: String, path: String) -> Result<(), String> {
-    Command::new(&editor)
+    Command::new("/bin/zsh")
+        .arg("-l")
+        .arg("-c")
+        .arg(format!("{} \"$@\"", editor))
+        .arg("_")
         .arg(&path)
         .spawn()
         .map(|_| ())

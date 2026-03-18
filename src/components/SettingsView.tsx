@@ -1,5 +1,7 @@
-import type { ReactElement } from "react";
+import { useRef, useState, type ReactElement } from "react";
 import { useAppDispatch, useAppSelector } from "../context";
+import { EditorConfig } from "../types";
+import { EditorIcon } from "./EditorIcon";
 import {
   THEME_TEMPLATES,
   TERMINAL_THEMES,
@@ -39,10 +41,66 @@ export function SettingsView() {
   const themeTemplate = useAppSelector((state) => state.themeTemplate);
   const terminalTheme = useAppSelector((state) => state.terminalTheme);
   const uiFontSize = useAppSelector((state) => state.uiFontSize);
+  const editors = useAppSelector((state) => state.editors);
+  const [newEditorName, setNewEditorName] = useState("");
+  const [newEditorCmd, setNewEditorCmd] = useState("");
 
   function adjustUiFontSize(delta: number) {
     const next = Math.min(24, Math.max(10, uiFontSize + delta));
     dispatch({ type: "SET_UI_FONT_SIZE", size: next });
+  }
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
+
+  function addEditor() {
+    if (!newEditorName.trim() || !newEditorCmd.trim()) return;
+    const editor: EditorConfig = {
+      id: `editor-${Date.now()}`,
+      name: newEditorName.trim(),
+      cmd: newEditorCmd.trim(),
+      builtin: false,
+      enabled: true,
+    };
+    dispatch({ type: "SET_EDITORS", editors: [...editors, editor] });
+    setNewEditorName("");
+    setNewEditorCmd("");
+  }
+
+  function removeEditor(editorId: string) {
+    dispatch({ type: "SET_EDITORS", editors: editors.filter((e) => e.id !== editorId) });
+  }
+
+  function toggleEditor(editorId: string) {
+    dispatch({
+      type: "SET_EDITORS",
+      editors: editors.map((e) =>
+        e.id === editorId ? { ...e, enabled: e.enabled === false ? true : false } : e,
+      ),
+    });
+  }
+
+  function handleIconUpload(editorId: string) {
+    setUploadTargetId(editorId);
+    fileInputRef.current?.click();
+  }
+
+  function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !uploadTargetId) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      dispatch({
+        type: "SET_EDITORS",
+        editors: editors.map((ed) =>
+          ed.id === uploadTargetId ? { ...ed, iconUrl: dataUrl } : ed,
+        ),
+      });
+      setUploadTargetId(null);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
   }
 
   return (
@@ -222,6 +280,94 @@ export function SettingsView() {
               +
             </button>
           </div>
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <h3 className="settings-section-title">Editors</h3>
+        <span className="settings-help" style={{ marginBottom: 12, display: "block" }}>
+          Configure which editors appear in the "Open in editor" menu.
+        </span>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/svg+xml,image/png,image/jpeg,image/webp"
+          style={{ display: "none" }}
+          onChange={onFileSelected}
+        />
+
+        {editors.length > 0 && (
+          <div className="command-list">
+            {editors.map((editor) => {
+              const isBuiltin = editor.builtin !== false;
+              const isEnabled = editor.enabled !== false;
+              return (
+                <div key={editor.id} className={`command-row${isEnabled ? "" : " command-row-disabled"}`}>
+                  <span className="command-icon">
+                    <EditorIcon cmd={editor.cmd} iconUrl={editor.iconUrl} size={18} />
+                  </span>
+                  <div className="command-info">
+                    <span className="command-name">{editor.name}</span>
+                    <span className="command-value">{editor.cmd}</span>
+                  </div>
+                  {!isBuiltin && (
+                    <button
+                      className="command-icon-upload"
+                      onClick={() => handleIconUpload(editor.id)}
+                      title="Upload icon"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                    </button>
+                  )}
+                  {isBuiltin ? (
+                    <button
+                      className={`editor-toggle${isEnabled ? " editor-toggle-on" : ""}`}
+                      onClick={() => toggleEditor(editor.id)}
+                      title={isEnabled ? "Disable" : "Enable"}
+                    >
+                      <span className="editor-toggle-thumb" />
+                    </button>
+                  ) : (
+                    <button
+                      className="command-remove"
+                      onClick={() => removeEditor(editor.id)}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="command-add">
+          <input
+            className="command-input"
+            placeholder="Name (e.g. Neovim)"
+            value={newEditorName}
+            onChange={(e) => setNewEditorName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addEditor()}
+          />
+          <input
+            className="command-input command-input-wide"
+            placeholder="Command (e.g. nvim)"
+            value={newEditorCmd}
+            onChange={(e) => setNewEditorCmd(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addEditor()}
+          />
+          <button
+            className="command-add-btn"
+            onClick={addEditor}
+            disabled={!newEditorName.trim() || !newEditorCmd.trim()}
+          >
+            Add
+          </button>
         </div>
       </div>
     </div>

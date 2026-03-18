@@ -6,6 +6,15 @@ export const PROJECT_COLORS = [
   "#7ec8e3", "#c3e88d", "#f78c6c", "#bb80b3",
 ] as const;
 
+export interface EditorConfig {
+  id: string;
+  name: string;
+  cmd: string;
+  builtin?: boolean;
+  enabled?: boolean;
+  iconUrl?: string;
+}
+
 export interface ProjectCommand {
   id: string;
   name: string;
@@ -34,6 +43,7 @@ export interface AppState {
   activeProjectId: string | null;
   tabs: Tab[];
   activeTabId: string | null;
+  editors: EditorConfig[];
   uiFontSize: number;
   terminalFontSize: number;
   themeMode: ThemeMode;
@@ -60,4 +70,5 @@ export type Action =
   | { type: "SET_THEME_MODE"; mode: ThemeMode }
   | { type: "SET_THEME_TEMPLATE"; template: ThemeTemplateId }
   | { type: "SET_TERMINAL_THEME"; theme: TerminalThemeId }
+  | { type: "SET_EDITORS"; editors: EditorConfig[] }
   | { type: "SET_VIEW"; view: "terminals" | "settings" | "project-settings" };

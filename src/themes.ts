@@ -3,7 +3,8 @@ export type ThemeTemplateId =
   | "amber"
   | "t3chat"
   | "solar-dusk"
-  | "synthwave";
+  | "synthwave"
+  | "purple";
 
 export type TerminalThemeId =
   | "ayu"
@@ -103,6 +104,16 @@ export const THEME_TEMPLATES: ThemeTemplateDefinition[] = [
       accent: "#ff4fd8",
     },
   },
+  {
+    id: "purple",
+    name: "Purple",
+    description: "Regal amethyst and indigo tones with cool violet accents.",
+    preview: {
+      light: "#f5f0ff",
+      dark: "#110b20",
+      accent: "#7c3aed",
+    },
+  },
 ];
 
 export const TERMINAL_THEMES: TerminalThemeDefinition[] = [
@@ -178,7 +189,8 @@ export function isThemeTemplateId(value: unknown): value is ThemeTemplateId {
     value === "amber" ||
     value === "t3chat" ||
     value === "solar-dusk" ||
-    value === "synthwave"
+    value === "synthwave" ||
+    value === "purple"
   );
 }
 
