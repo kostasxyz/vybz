@@ -6,6 +6,7 @@ export type ThemeTemplateId =
   | "synthwave";
 
 export type TerminalThemeId =
+  | "ayu"
   | "night-owl"
   | "solarized-dark"
   | "solarized-light"
@@ -106,6 +107,16 @@ export const THEME_TEMPLATES: ThemeTemplateDefinition[] = [
 
 export const TERMINAL_THEMES: TerminalThemeDefinition[] = [
   {
+    id: "ayu",
+    name: "Ayu",
+    description: "Warm dark theme with golden accents inspired by the Ayu color scheme.",
+    preview: {
+      background: "#0b0e14",
+      foreground: "#bfbdb6",
+      accent: "#e6b450",
+    },
+  },
+  {
     id: "night-owl",
     name: "Night Owl",
     description: "A dark theme optimized for nighttime coding with high contrast.",
@@ -173,6 +184,7 @@ export function isThemeTemplateId(value: unknown): value is ThemeTemplateId {
 
 export function isTerminalThemeId(value: unknown): value is TerminalThemeId {
   return (
+    value === "ayu" ||
     value === "night-owl" ||
     value === "solarized-dark" ||
     value === "solarized-light" ||

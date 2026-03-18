@@ -107,6 +107,31 @@
   --terminal-ansi-bright-white: #c0caf5;
 }
 
+:root[data-terminal-theme="ayu"] {
+  --terminal-background: #0b0e14;
+  --terminal-foreground: #bfbdb6;
+  --terminal-cursor: #e6b450;
+  --terminal-cursor-accent: #0b0e14;
+  --terminal-selection-background: rgba(109, 124, 153, 0.3);
+  --terminal-selection-inactive-background: rgba(109, 124, 153, 0.2);
+  --terminal-ansi-black: #01060e;
+  --terminal-ansi-red: #ea6c73;
+  --terminal-ansi-green: #91b362;
+  --terminal-ansi-yellow: #f9af4f;
+  --terminal-ansi-blue: #53bdfa;
+  --terminal-ansi-magenta: #fae994;
+  --terminal-ansi-cyan: #90e1c6;
+  --terminal-ansi-white: #c7c7c7;
+  --terminal-ansi-bright-black: #686868;
+  --terminal-ansi-bright-red: #f07178;
+  --terminal-ansi-bright-green: #c2d94c;
+  --terminal-ansi-bright-yellow: #ffb454;
+  --terminal-ansi-bright-blue: #59c2ff;
+  --terminal-ansi-bright-magenta: #ffee99;
+  --terminal-ansi-bright-cyan: #95e6cb;
+  --terminal-ansi-bright-white: #ffffff;
+}
+
 :root[data-terminal-theme="synthwave"] {
   --terminal-background: #140d22;
   --terminal-foreground: #f4f4f4;
@@ -1010,7 +1035,7 @@ body,
 }
 
 .tab.active {
-  background: var(--background);
+  background: var(--surface-hover);
   color: var(--foreground);
 }
 
@@ -1147,9 +1172,13 @@ body,
 /* Settings view */
 .settings-view {
   padding: 32px 40px;
-  max-width: 720px;
   overflow-y: auto;
   flex: 1;
+  max-width: 100%;
+}
+
+.settings-view > * {
+  max-width: 720px;
 }
 
 .settings-title {
@@ -1177,7 +1206,12 @@ body,
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 10px 0;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--sidebar-border);
+}
+
+.settings-row:last-child {
+  border-bottom: none;
 }
 
 .settings-row-align-start {
@@ -1188,7 +1222,12 @@ body,
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 10px 0;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--sidebar-border);
+}
+
+.settings-stack:last-child {
+  border-bottom: none;
 }
 
 .settings-copy {
@@ -1214,6 +1253,9 @@ body,
 }
 
 .theme-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: var(--surface-elevated);
   border: 1px solid var(--border);
   color: var(--foreground);

@@ -1,9 +1,31 @@
+import type { ReactElement } from "react";
 import { useAppDispatch, useAppSelector } from "../context";
 import {
   THEME_TEMPLATES,
   TERMINAL_THEMES,
   type ThemeMode,
 } from "../themes";
+
+const THEME_MODE_ICONS: Record<ThemeMode, ReactElement> = {
+  system: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="12" height="9" rx="1" />
+      <path d="M5 14h6" />
+      <path d="M8 12v2" />
+    </svg>
+  ),
+  light: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="8" r="3" />
+      <path d="M8 1.5v1M8 13.5v1M1.5 8h1M13.5 8h1M3.4 3.4l.7.7M11.9 11.9l.7.7M3.4 12.6l.7-.7M11.9 4.1l.7-.7" />
+    </svg>
+  ),
+  dark: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M13.5 8.5a5.5 5.5 0 1 1-6-6 4.5 4.5 0 0 0 6 6z" />
+    </svg>
+  ),
+};
 
 const THEME_MODE_OPTIONS: Array<{ value: ThemeMode; label: string }> = [
   { value: "system", label: "System" },
@@ -48,6 +70,7 @@ export function SettingsView() {
                   dispatch({ type: "SET_THEME_MODE", mode: option.value })
                 }
               >
+                {THEME_MODE_ICONS[option.value]}
                 {option.label}
               </button>
             ))}

@@ -37,6 +37,7 @@
               ? parsed.themeTemplate
               : defaults.themeTemplate;
           const terminalTheme =
+            parsed?.terminalTheme === "ayu" ||
             parsed?.terminalTheme === "night-owl" ||
             parsed?.terminalTheme === "solarized-light" ||
             parsed?.terminalTheme === "solarized-dark" ||
