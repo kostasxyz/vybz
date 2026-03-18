@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type CSSProperties } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useAppDispatch, useAppSelector } from "../context";
 import { PROJECT_COLORS } from "../types";
@@ -89,6 +89,11 @@ export function Sidebar() {
           <div
             key={project.id}
             className={`project-item ${activeProjectId === project.id ? "active" : ""}`}
+            style={
+              {
+                "--project-item-indicator-color": project.color || "#61afef",
+              } as CSSProperties
+            }
             onClick={() => selectProject(project.id)}
             onDoubleClick={(e) => startRename(project.id, project.name, e)}
           >

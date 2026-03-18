@@ -4,12 +4,6 @@ export type ThemeTemplateId =
   | "t3chat"
   | "solar-dusk"
   | "synthwave";
-export type TerminalThemeId =
-  | "night-owl"
-  | "solarized-light"
-  | "solarized-dark"
-  | "tokyo-night"
-  | "synthwave";
 export type ThemeMode = "system" | "light" | "dark";
 export type ResolvedThemeMode = Exclude<ThemeMode, "system">;
 
@@ -27,18 +21,6 @@ export interface ThemeTemplateDefinition {
 export interface ThemeSettings {
   themeMode: ThemeMode;
   themeTemplate: ThemeTemplateId;
-  terminalTheme: TerminalThemeId;
-}
-
-export interface TerminalThemeDefinition {
-  id: TerminalThemeId;
-  name: string;
-  description: string;
-  preview: {
-    background: string;
-    foreground: string;
-    accent: string;
-  };
 }
 
 export const THEME_STORAGE_KEY = "vybz.theme";
@@ -46,7 +28,6 @@ export const THEME_STORAGE_KEY = "vybz.theme";
 export const DEFAULT_THEME_SETTINGS: ThemeSettings = {
   themeMode: "dark",
   themeTemplate: "native",
-  terminalTheme: "night-owl",
 };
 
 export const THEME_TEMPLATES: ThemeTemplateDefinition[] = [
@@ -102,59 +83,6 @@ export const THEME_TEMPLATES: ThemeTemplateDefinition[] = [
   },
 ];
 
-export const TERMINAL_THEMES: TerminalThemeDefinition[] = [
-  {
-    id: "night-owl",
-    name: "Night Owl",
-    description: "Inky dark blue with cool neon accents and higher contrast.",
-    preview: {
-      background: "#011627",
-      foreground: "#d6deeb",
-      accent: "#82aaff",
-    },
-  },
-  {
-    id: "solarized-light",
-    name: "Solarized Light",
-    description: "Low-glare light palette tuned for long shell sessions.",
-    preview: {
-      background: "#fdf6e3",
-      foreground: "#657b83",
-      accent: "#268bd2",
-    },
-  },
-  {
-    id: "solarized-dark",
-    name: "Solarized Dark",
-    description: "The classic Solarized dark terminal palette.",
-    preview: {
-      background: "#002b36",
-      foreground: "#839496",
-      accent: "#2aa198",
-    },
-  },
-  {
-    id: "tokyo-night",
-    name: "Tokyo Night",
-    description: "Deep indigo background with crisp pastel ANSI colors.",
-    preview: {
-      background: "#1a1b26",
-      foreground: "#c0caf5",
-      accent: "#bb9af7",
-    },
-  },
-  {
-    id: "synthwave",
-    name: "Synthwave",
-    description: "Retro-futurist neon with a high-contrast purple terminal backdrop.",
-    preview: {
-      background: "#241b2f",
-      foreground: "#f7f2ff",
-      accent: "#ff7edb",
-    },
-  },
-];
-
 export function isThemeMode(value: unknown): value is ThemeMode {
   return value === "system" || value === "light" || value === "dark";
 }
@@ -169,16 +97,6 @@ export function isThemeTemplateId(value: unknown): value is ThemeTemplateId {
   );
 }
 
-export function isTerminalThemeId(value: unknown): value is TerminalThemeId {
-  return (
-    value === "night-owl" ||
-    value === "solarized-light" ||
-    value === "solarized-dark" ||
-    value === "tokyo-night" ||
-    value === "synthwave"
-  );
-}
-
 export function normalizeThemeSettings(
   value: Partial<ThemeSettings> | null | undefined,
 ): ThemeSettings {
@@ -189,9 +107,6 @@ export function normalizeThemeSettings(
     themeTemplate: isThemeTemplateId(value?.themeTemplate)
       ? value.themeTemplate
       : DEFAULT_THEME_SETTINGS.themeTemplate,
-    terminalTheme: isTerminalThemeId(value?.terminalTheme)
-      ? value.terminalTheme
-      : DEFAULT_THEME_SETTINGS.terminalTheme,
   };
 }
 
@@ -226,7 +141,6 @@ export function applyThemeToDocument(
   const root = document.documentElement;
 
   root.dataset.themeTemplate = settings.themeTemplate;
-  root.dataset.terminalTheme = settings.terminalTheme;
   root.dataset.themeMode = resolvedMode;
   root.classList.toggle("dark", resolvedMode === "dark");
   root.style.colorScheme = resolvedMode;

@@ -7,6 +7,8 @@ use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtySize};
 use tauri::ipc::Channel;
 use uuid::Uuid;
 
+const DEFAULT_TERM: &str = "xterm-256color";
+
 struct Session {
     writer: Box<dyn Write + Send>,
     master: Box<dyn MasterPty + Send>,
@@ -46,6 +48,9 @@ impl PtyManager {
         let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
         let mut cmd = CommandBuilder::new(&shell);
         cmd.cwd(cwd);
+        if cmd.get_env("TERM").is_none() {
+            cmd.env("TERM", DEFAULT_TERM);
+        }
 
         let child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
 
