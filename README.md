@@ -1,7 +1,36 @@
-# Tauri + React + Typescript
+# Vybz
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+Vybz is a Tauri desktop app for managing multiple project terminal sessions. Each project gets a color-coded sidebar entry and tabbed terminals that can run shells or AI coding tools.
 
-## Recommended IDE Setup
+## Stack
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+- Tauri v2
+- React 19
+- TypeScript
+- Rust
+
+## Development
+
+```bash
+pnpm install
+pnpm tauri dev
+```
+
+Frontend only:
+
+```bash
+pnpm dev
+```
+
+Production build:
+
+```bash
+pnpm build
+pnpm tauri build
+```
+
+## Notes
+
+- Frontend state lives in `src/`
+- Tauri backend lives in `src-tauri/`
+- Theme system reference: `docs/refs/theme-module.md`
