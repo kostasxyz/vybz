@@ -4,6 +4,14 @@ export type ThemeTemplateId =
   | "t3chat"
   | "solar-dusk"
   | "synthwave";
+
+export type TerminalThemeId =
+  | "night-owl"
+  | "solarized-dark"
+  | "solarized-light"
+  | "tokyo-night"
+  | "synthwave";
+
 export type ThemeMode = "system" | "light" | "dark";
 export type ResolvedThemeMode = Exclude<ThemeMode, "system">;
 
@@ -18,9 +26,21 @@ export interface ThemeTemplateDefinition {
   };
 }
 
+export interface TerminalThemeDefinition {
+  id: TerminalThemeId;
+  name: string;
+  description: string;
+  preview: {
+    background: string;
+    foreground: string;
+    accent: string;
+  };
+}
+
 export interface ThemeSettings {
   themeMode: ThemeMode;
   themeTemplate: ThemeTemplateId;
+  terminalTheme: TerminalThemeId;
 }
 
 export const THEME_STORAGE_KEY = "vybz.theme";
@@ -28,6 +48,7 @@ export const THEME_STORAGE_KEY = "vybz.theme";
 export const DEFAULT_THEME_SETTINGS: ThemeSettings = {
   themeMode: "dark",
   themeTemplate: "native",
+  terminalTheme: "night-owl",
 };
 
 export const THEME_TEMPLATES: ThemeTemplateDefinition[] = [
@@ -83,6 +104,59 @@ export const THEME_TEMPLATES: ThemeTemplateDefinition[] = [
   },
 ];
 
+export const TERMINAL_THEMES: TerminalThemeDefinition[] = [
+  {
+    id: "night-owl",
+    name: "Night Owl",
+    description: "A dark theme optimized for nighttime coding with high contrast.",
+    preview: {
+      background: "#011627",
+      foreground: "#d6deeb",
+      accent: "#82aaff",
+    },
+  },
+  {
+    id: "solarized-dark",
+    name: "Solarized Dark",
+    description: "Precision color scheme with dark background for reduced eye strain.",
+    preview: {
+      background: "#002b36",
+      foreground: "#839496",
+      accent: "#268bd2",
+    },
+  },
+  {
+    id: "solarized-light",
+    name: "Solarized Light",
+    description: "Precision color scheme with light background for daytime use.",
+    preview: {
+      background: "#fdf6e3",
+      foreground: "#657b83",
+      accent: "#268bd2",
+    },
+  },
+  {
+    id: "tokyo-night",
+    name: "Tokyo Night",
+    description: "A dark theme inspired by Tokyo neon lights at night.",
+    preview: {
+      background: "#1a1b26",
+      foreground: "#a9b1d6",
+      accent: "#7aa2f7",
+    },
+  },
+  {
+    id: "synthwave",
+    name: "Synthwave",
+    description: "Neon pinks and cyan accents on a deep purple background.",
+    preview: {
+      background: "#140d22",
+      foreground: "#f4f4f4",
+      accent: "#ff4fd8",
+    },
+  },
+];
+
 export function isThemeMode(value: unknown): value is ThemeMode {
   return value === "system" || value === "light" || value === "dark";
 }
@@ -97,6 +171,16 @@ export function isThemeTemplateId(value: unknown): value is ThemeTemplateId {
   );
 }
 
+export function isTerminalThemeId(value: unknown): value is TerminalThemeId {
+  return (
+    value === "night-owl" ||
+    value === "solarized-dark" ||
+    value === "solarized-light" ||
+    value === "tokyo-night" ||
+    value === "synthwave"
+  );
+}
+
 export function normalizeThemeSettings(
   value: Partial<ThemeSettings> | null | undefined,
 ): ThemeSettings {
@@ -107,6 +191,9 @@ export function normalizeThemeSettings(
     themeTemplate: isThemeTemplateId(value?.themeTemplate)
       ? value.themeTemplate
       : DEFAULT_THEME_SETTINGS.themeTemplate,
+    terminalTheme: isTerminalThemeId(value?.terminalTheme)
+      ? value.terminalTheme
+      : DEFAULT_THEME_SETTINGS.terminalTheme,
   };
 }
 
@@ -141,6 +228,7 @@ export function applyThemeToDocument(
   const root = document.documentElement;
 
   root.dataset.themeTemplate = settings.themeTemplate;
+  root.dataset.terminalTheme = settings.terminalTheme;
   root.dataset.themeMode = resolvedMode;
   root.classList.toggle("dark", resolvedMode === "dark");
   root.style.colorScheme = resolvedMode;

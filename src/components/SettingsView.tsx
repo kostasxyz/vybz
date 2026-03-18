@@ -1,6 +1,7 @@
 import { useAppDispatch, useAppSelector } from "../context";
 import {
   THEME_TEMPLATES,
+  TERMINAL_THEMES,
   type ThemeMode,
 } from "../themes";
 
@@ -14,6 +15,7 @@ export function SettingsView() {
   const dispatch = useAppDispatch();
   const themeMode = useAppSelector((state) => state.themeMode);
   const themeTemplate = useAppSelector((state) => state.themeTemplate);
+  const terminalTheme = useAppSelector((state) => state.terminalTheme);
   const uiFontSize = useAppSelector((state) => state.uiFontSize);
 
   function adjustUiFontSize(delta: number) {
@@ -107,6 +109,67 @@ export function SettingsView() {
 
                 <span className="theme-template-description">
                   {template.description}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="settings-stack">
+          <div className="settings-copy">
+            <span className="settings-label">Terminal Theme</span>
+            <span className="settings-help">
+              Color palette for terminal output and ANSI colors.
+            </span>
+          </div>
+
+          <div className="theme-template-grid">
+            {TERMINAL_THEMES.map((theme) => (
+              <button
+                key={theme.id}
+                type="button"
+                aria-pressed={terminalTheme === theme.id}
+                className={`theme-template-card${terminalTheme === theme.id ? " active" : ""}`}
+                onClick={() =>
+                  dispatch({
+                    type: "SET_TERMINAL_THEME",
+                    theme: theme.id,
+                  })
+                }
+              >
+                <div className="theme-template-preview" aria-hidden="true">
+                  <span className="theme-template-tone">
+                    <span
+                      className="theme-template-swatch"
+                      style={{ background: theme.preview.background }}
+                    />
+                    <span className="theme-template-tone-label">BG</span>
+                  </span>
+                  <span className="theme-template-tone">
+                    <span
+                      className="theme-template-swatch"
+                      style={{ background: theme.preview.foreground }}
+                    />
+                    <span className="theme-template-tone-label">FG</span>
+                  </span>
+                  <span className="theme-template-tone">
+                    <span
+                      className="theme-template-swatch"
+                      style={{ background: theme.preview.accent }}
+                    />
+                    <span className="theme-template-tone-label">Accent</span>
+                  </span>
+                </div>
+
+                <div className="theme-template-name-row">
+                  <span className="theme-template-name">{theme.name}</span>
+                  {terminalTheme === theme.id && (
+                    <span className="theme-template-selected">Selected</span>
+                  )}
+                </div>
+
+                <span className="theme-template-description">
+                  {theme.description}
                 </span>
               </button>
             ))}

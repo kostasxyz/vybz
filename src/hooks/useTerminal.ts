@@ -205,6 +205,7 @@ export function useTerminal(
         "class",
         "data-theme-mode",
         "data-theme-template",
+        "data-terminal-theme",
       ],
     });
 
