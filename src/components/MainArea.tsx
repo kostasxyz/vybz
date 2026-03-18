@@ -7,8 +7,8 @@ import {
   useMemo,
 } from "react";
 import { useAppDispatch, useAppSelector } from "../context";
-import { ProjectCommand, Tab, ToolType } from "../types";
-import { TabBar, TOOL_COMMANDS } from "./TabBar";
+import { ProjectCommand, Tab } from "../types";
+import { TabBar } from "./TabBar";
 import { SettingsView } from "./SettingsView";
 import { ProjectSettingsView } from "./ProjectSettingsView";
 
@@ -33,6 +33,7 @@ export function MainArea() {
   const projects = useAppSelector((state) => state.projects);
   const tabs = useAppSelector((state) => state.tabs);
   const terminalFontSize = useAppSelector((state) => state.terminalFontSize);
+  const tools = useAppSelector((state) => state.tools);
   const editors = useAppSelector((state) => state.editors);
   const view = useAppSelector((state) => state.view);
 
@@ -90,14 +91,14 @@ export function MainArea() {
     : null;
 
   const addTab = useCallback(
-    (projectId: string, tool: ToolType) => {
+    (projectId: string, name: string, command?: string) => {
       dispatch({
         type: "ADD_TAB",
         tab: {
           id: createTabId(),
           projectId,
-          label: tool,
-          command: TOOL_COMMANDS[tool],
+          label: name,
+          command,
         },
       });
     },
@@ -144,13 +145,13 @@ export function MainArea() {
     dispatch({ type: "SET_VIEW", view: "project-settings" });
   }, [dispatch]);
 
-  const addTabForActiveProject = useCallback(
-    (tool: ToolType) => {
+  const addToolTab = useCallback(
+    (name: string, command?: string) => {
       if (!activeProjectId) {
         return;
       }
 
-      addTab(activeProjectId, tool);
+      addTab(activeProjectId, name, command);
     },
     [activeProjectId, addTab],
   );
@@ -175,6 +176,7 @@ export function MainArea() {
       addTab(activeProjectId, "Shell");
       return;
     }
+
 
     const currentTabProjectId = activeTabId
       ? tabProjectIdById.get(activeTabId) ?? null
@@ -208,6 +210,7 @@ export function MainArea() {
       }
       return;
     }
+
 
     if (event.key === "w") {
       event.preventDefault();
@@ -259,7 +262,8 @@ export function MainArea() {
         <TabBar
           activeTabId={activeTabId}
           editors={editors}
-          onAdd={addTabForActiveProject}
+          tools={tools}
+          onAddTool={addToolTab}
           onClose={closeTab}
           onProjectSettings={openProjectSettings}
           onRename={renameTab}

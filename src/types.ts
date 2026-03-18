@@ -6,6 +6,15 @@ export const PROJECT_COLORS = [
   "#7ec8e3", "#c3e88d", "#f78c6c", "#bb80b3",
 ] as const;
 
+export interface ToolConfig {
+  id: string;
+  name: string;
+  cmd?: string;
+  builtin?: boolean;
+  enabled?: boolean;
+  iconUrl?: string;
+}
+
 export interface EditorConfig {
   id: string;
   name: string;
@@ -29,8 +38,6 @@ export interface Project {
   commands?: ProjectCommand[];
 }
 
-export type ToolType = "Shell" | "Claude" | "Codex" | "OpenCode" | "Pi";
-
 export interface Tab {
   id: string;
   projectId: string;
@@ -43,6 +50,7 @@ export interface AppState {
   activeProjectId: string | null;
   tabs: Tab[];
   activeTabId: string | null;
+  tools: ToolConfig[];
   editors: EditorConfig[];
   uiFontSize: number;
   terminalFontSize: number;
@@ -70,5 +78,6 @@ export type Action =
   | { type: "SET_THEME_MODE"; mode: ThemeMode }
   | { type: "SET_THEME_TEMPLATE"; template: ThemeTemplateId }
   | { type: "SET_TERMINAL_THEME"; theme: TerminalThemeId }
+  | { type: "SET_TOOLS"; tools: ToolConfig[] }
   | { type: "SET_EDITORS"; editors: EditorConfig[] }
   | { type: "SET_VIEW"; view: "terminals" | "settings" | "project-settings" };

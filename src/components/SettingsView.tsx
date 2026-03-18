@@ -1,7 +1,8 @@
 import { useRef, useState, type ReactElement } from "react";
 import { useAppDispatch, useAppSelector } from "../context";
-import { EditorConfig } from "../types";
+import { EditorConfig, ToolConfig } from "../types";
 import { EditorIcon } from "./EditorIcon";
+import { ToolIcon } from "./ToolIcon";
 import {
   THEME_TEMPLATES,
   TERMINAL_THEMES,
@@ -41,7 +42,10 @@ export function SettingsView() {
   const themeTemplate = useAppSelector((state) => state.themeTemplate);
   const terminalTheme = useAppSelector((state) => state.terminalTheme);
   const uiFontSize = useAppSelector((state) => state.uiFontSize);
+  const tools = useAppSelector((state) => state.tools);
   const editors = useAppSelector((state) => state.editors);
+  const [newToolName, setNewToolName] = useState("");
+  const [newToolCmd, setNewToolCmd] = useState("");
   const [newEditorName, setNewEditorName] = useState("");
   const [newEditorCmd, setNewEditorCmd] = useState("");
 
@@ -50,9 +54,71 @@ export function SettingsView() {
     dispatch({ type: "SET_UI_FONT_SIZE", size: next });
   }
 
+  // Shared upload logic
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
+  const [uploadTarget, setUploadTarget] = useState<{ type: "tool" | "editor"; id: string } | null>(null);
 
+  function handleIconUpload(type: "tool" | "editor", id: string) {
+    setUploadTarget({ type, id });
+    fileInputRef.current?.click();
+  }
+
+  function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !uploadTarget) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      if (uploadTarget.type === "editor") {
+        dispatch({
+          type: "SET_EDITORS",
+          editors: editors.map((ed) =>
+            ed.id === uploadTarget.id ? { ...ed, iconUrl: dataUrl } : ed,
+          ),
+        });
+      } else {
+        dispatch({
+          type: "SET_TOOLS",
+          tools: tools.map((t) =>
+            t.id === uploadTarget.id ? { ...t, iconUrl: dataUrl } : t,
+          ),
+        });
+      }
+      setUploadTarget(null);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  // Tool handlers
+  function addTool() {
+    if (!newToolName.trim() || !newToolCmd.trim()) return;
+    const tool: ToolConfig = {
+      id: `tool-${Date.now()}`,
+      name: newToolName.trim(),
+      cmd: newToolCmd.trim(),
+      builtin: false,
+      enabled: true,
+    };
+    dispatch({ type: "SET_TOOLS", tools: [...tools, tool] });
+    setNewToolName("");
+    setNewToolCmd("");
+  }
+
+  function removeTool(toolId: string) {
+    dispatch({ type: "SET_TOOLS", tools: tools.filter((t) => t.id !== toolId) });
+  }
+
+  function toggleTool(toolId: string) {
+    dispatch({
+      type: "SET_TOOLS",
+      tools: tools.map((t) =>
+        t.id === toolId ? { ...t, enabled: t.enabled === false ? true : false } : t,
+      ),
+    });
+  }
+
+  // Editor handlers
   function addEditor() {
     if (!newEditorName.trim() || !newEditorCmd.trim()) return;
     const editor: EditorConfig = {
@@ -78,29 +144,6 @@ export function SettingsView() {
         e.id === editorId ? { ...e, enabled: e.enabled === false ? true : false } : e,
       ),
     });
-  }
-
-  function handleIconUpload(editorId: string) {
-    setUploadTargetId(editorId);
-    fileInputRef.current?.click();
-  }
-
-  function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !uploadTargetId) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      dispatch({
-        type: "SET_EDITORS",
-        editors: editors.map((ed) =>
-          ed.id === uploadTargetId ? { ...ed, iconUrl: dataUrl } : ed,
-        ),
-      });
-      setUploadTargetId(null);
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
   }
 
   return (
@@ -284,6 +327,86 @@ export function SettingsView() {
       </div>
 
       <div className="settings-section">
+        <h3 className="settings-section-title">Agent Tools</h3>
+        <span className="settings-help" style={{ marginBottom: 12, display: "block" }}>
+          Configure which tools appear in the new tab menu.
+        </span>
+
+        {tools.length > 0 && (
+          <div className="command-list">
+            {tools.map((tool) => {
+              const isBuiltin = tool.builtin !== false;
+              const isEnabled = tool.enabled !== false;
+              return (
+                <div key={tool.id} className={`command-row${isEnabled ? "" : " command-row-disabled"}`}>
+                  <span className="command-icon">
+                    <ToolIcon toolId={tool.id} iconUrl={tool.iconUrl} size={18} />
+                  </span>
+                  <div className="command-info">
+                    <span className="command-name">{tool.name}</span>
+                    {tool.cmd && <span className="command-value">{tool.cmd}</span>}
+                  </div>
+                  {!isBuiltin && (
+                    <button
+                      className="command-icon-upload"
+                      onClick={() => handleIconUpload("tool", tool.id)}
+                      title="Upload icon"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                    </button>
+                  )}
+                  {tool.id === "shell" ? null : isBuiltin ? (
+                    <button
+                      className={`editor-toggle${isEnabled ? " editor-toggle-on" : ""}`}
+                      onClick={() => toggleTool(tool.id)}
+                      title={isEnabled ? "Disable" : "Enable"}
+                    >
+                      <span className="editor-toggle-thumb" />
+                    </button>
+                  ) : (
+                    <button
+                      className="command-remove"
+                      onClick={() => removeTool(tool.id)}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="command-add">
+          <input
+            className="command-input"
+            placeholder="Name (e.g. Aider)"
+            value={newToolName}
+            onChange={(e) => setNewToolName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addTool()}
+          />
+          <input
+            className="command-input command-input-wide"
+            placeholder="Command (e.g. aider)"
+            value={newToolCmd}
+            onChange={(e) => setNewToolCmd(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addTool()}
+          />
+          <button
+            className="command-add-btn"
+            onClick={addTool}
+            disabled={!newToolName.trim() || !newToolCmd.trim()}
+          >
+            Add
+          </button>
+        </div>
+      </div>
+
+      <div className="settings-section">
         <h3 className="settings-section-title">Editors</h3>
         <span className="settings-help" style={{ marginBottom: 12, display: "block" }}>
           Configure which editors appear in the "Open in editor" menu.
@@ -314,7 +437,7 @@ export function SettingsView() {
                   {!isBuiltin && (
                     <button
                       className="command-icon-upload"
-                      onClick={() => handleIconUpload(editor.id)}
+                      onClick={() => handleIconUpload("editor", editor.id)}
                       title="Upload icon"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -9,6 +9,7 @@ import type { Dispatch, ReactNode } from "react";
 import { AppState, Action, Project } from "./types";
 import {
   DEFAULT_EDITORS,
+  DEFAULT_TOOLS,
   loadPersistedState,
   savePersistedState,
   type PersistedState,
@@ -27,6 +28,7 @@ const initialState: AppState = {
   activeProjectId: null,
   tabs: [],
   activeTabId: null,
+  tools: DEFAULT_TOOLS,
   editors: DEFAULT_EDITORS,
   uiFontSize: 14,
   terminalFontSize: 15,
@@ -246,6 +248,10 @@ function reducer(state: AppState, action: Action): AppState {
       return state.terminalTheme === action.theme
         ? state
         : { ...state, terminalTheme: action.theme };
+    case "SET_TOOLS":
+      return state.tools === action.tools
+        ? state
+        : { ...state, tools: action.tools };
     case "SET_EDITORS":
       return state.editors === action.editors
         ? state
@@ -262,6 +268,7 @@ function toPersistedState(state: AppState): PersistedState {
     projects: state.projects,
     tabs: state.tabs,
     activeTabId: state.activeTabId,
+    tools: state.tools,
     editors: state.editors,
     uiFontSize: state.uiFontSize,
     terminalFontSize: state.terminalFontSize,

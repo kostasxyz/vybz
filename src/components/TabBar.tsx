@@ -1,24 +1,8 @@
-import { memo, useState, useRef, useEffect } from "react";
+import { memo, useState, useRef, useEffect, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Tab, ToolType, ProjectCommand, EditorConfig } from "../types";
+import { Tab, ProjectCommand, EditorConfig, ToolConfig } from "../types";
 import { EditorIcon } from "./EditorIcon";
 import { ToolIcon } from "./ToolIcon";
-
-const TOOL_COMMANDS: Record<ToolType, string | undefined> = {
-  Shell: undefined,
-  Claude: "claude\r",
-  Codex: "codex\r",
-  OpenCode: "opencode\r",
-  Pi: "pi\r",
-};
-
-const TOOL_TYPES: ToolType[] = ["Shell", "Claude", "Codex", "OpenCode", "Pi"];
-const COMMAND_TO_TOOL = new Map<string, ToolType>(
-  TOOL_TYPES.flatMap((tool) => {
-    const command = TOOL_COMMANDS[tool];
-    return command ? [[command, tool]] : [];
-  }),
-);
 
 interface TabBarProps {
   tabs: Tab[];
@@ -26,17 +10,18 @@ interface TabBarProps {
   projectPath: string;
   projectCommands: ProjectCommand[];
   editors: EditorConfig[];
+  tools: ToolConfig[];
   onSelect: (tabId: string) => void;
   onClose: (tabId: string) => void;
-  onAdd: (tool: ToolType) => void;
+  onAddTool: (name: string, command?: string) => void;
   onRename: (tabId: string, label: string) => void;
   onRunCommand: (label: string, command: string) => void;
   onProjectSettings: () => void;
 }
 
 export const TabBar = memo(function TabBar({
-  tabs, activeTabId, projectPath, projectCommands, editors,
-  onSelect, onClose, onAdd, onRename, onRunCommand, onProjectSettings,
+  tabs, activeTabId, projectPath, projectCommands, editors, tools,
+  onSelect, onClose, onAddTool, onRename, onRunCommand, onProjectSettings,
 }: TabBarProps) {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
@@ -45,6 +30,21 @@ export const TabBar = memo(function TabBar({
   const editorRef = useRef<HTMLDivElement>(null);
   const runRef = useRef<HTMLDivElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
+
+  const commandToTool = useMemo(() => {
+    const map = new Map<string, ToolConfig>();
+    for (const tool of tools) {
+      if (tool.cmd) {
+        map.set(`${tool.cmd}\r`, tool);
+      }
+    }
+    return map;
+  }, [tools]);
+
+  const enabledTools = useMemo(
+    () => tools.filter((t) => t.enabled !== false),
+    [tools],
+  );
 
   useEffect(() => {
     if (!openDropdown) return;
@@ -89,50 +89,54 @@ export const TabBar = memo(function TabBar({
     setOpenDropdown(null);
   }
 
-  function getToolType(tab: Tab): ToolType {
-    return tab.command ? COMMAND_TO_TOOL.get(tab.command) ?? "Shell" : "Shell";
+  function getTabTool(tab: Tab): ToolConfig | undefined {
+    if (!tab.command) return tools.find((t) => t.id === "shell");
+    return commandToTool.get(tab.command);
   }
 
   return (
     <div className="tab-bar">
       <div className="tab-bar-tabs">
-        {tabs.map((tab) => (
-          <div
-            key={tab.id}
-            className={`tab ${tab.id === activeTabId ? "active" : ""}`}
-            onClick={() => onSelect(tab.id)}
-            onDoubleClick={() => startRename(tab.id, tab.label)}
-          >
-            <span className="tab-icon">
-              <ToolIcon tool={getToolType(tab)} size={14} />
-            </span>
-            {editingTabId === tab.id ? (
-              <input
-                ref={editInputRef}
-                className="tab-rename-input"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onBlur={commitRename}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") commitRename();
-                  if (e.key === "Escape") setEditingTabId(null);
-                }}
-                onClick={(e) => e.stopPropagation()}
-              />
-            ) : (
-              <span className="tab-label">{tab.label}</span>
-            )}
-            <button
-              className="tab-close"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClose(tab.id);
-              }}
+        {tabs.map((tab) => {
+          const tool = getTabTool(tab);
+          return (
+            <div
+              key={tab.id}
+              className={`tab ${tab.id === activeTabId ? "active" : ""}`}
+              onClick={() => onSelect(tab.id)}
+              onDoubleClick={() => startRename(tab.id, tab.label)}
             >
-              ×
-            </button>
-          </div>
-        ))}
+              <span className="tab-icon">
+                <ToolIcon toolId={tool?.id ?? "shell"} iconUrl={tool?.iconUrl} size={14} />
+              </span>
+              {editingTabId === tab.id ? (
+                <input
+                  ref={editInputRef}
+                  className="tab-rename-input"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitRename();
+                    if (e.key === "Escape") setEditingTabId(null);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <span className="tab-label">{tab.label}</span>
+              )}
+              <button
+                className="tab-close"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose(tab.id);
+                }}
+              >
+                ×
+              </button>
+            </div>
+          );
+        })}
       </div>
       <div className="tab-actions">
         {/* New tab */}
@@ -142,17 +146,20 @@ export const TabBar = memo(function TabBar({
           </button>
           {openDropdown === "tools" && (
             <div className="tool-dropdown">
-              {TOOL_TYPES.map((tool) => (
+              {enabledTools.map((tool) => (
                 <div
-                  key={tool}
+                  key={tool.id}
                   className="tool-dropdown-item"
                   onMouseDown={(e) => e.stopPropagation()}
-                  onClick={() => { onAdd(tool); setOpenDropdown(null); }}
+                  onClick={() => {
+                    onAddTool(tool.name, tool.cmd ? `${tool.cmd}\r` : undefined);
+                    setOpenDropdown(null);
+                  }}
                 >
                   <span className="tool-dropdown-icon">
-                    <ToolIcon tool={tool} size={16} />
+                    <ToolIcon toolId={tool.id} iconUrl={tool.iconUrl} size={16} />
                   </span>
-                  {tool}
+                  {tool.name}
                 </div>
               ))}
             </div>
@@ -250,5 +257,3 @@ export const TabBar = memo(function TabBar({
     </div>
   );
 });
-
-export { TOOL_COMMANDS };
