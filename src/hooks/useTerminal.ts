@@ -9,6 +9,10 @@ const FALLBACK_TERMINAL_FONT = 'Menlo, Monaco, "Courier New", monospace';
 const STARTUP_COMMAND_IDLE_MS = 120;
 const STARTUP_COMMAND_FALLBACK_MS = 400;
 
+function normalizeProgrammaticInput(input: string) {
+  return input.replace(/\r?\n/g, "\r");
+}
+
 function readThemeVariable(name: string, fallback: string) {
   const value = getComputedStyle(document.documentElement)
     .getPropertyValue(name)
@@ -135,7 +139,7 @@ export function useTerminal(
         }
 
         startupCommandSent = true;
-        queueInput(options.command!);
+        queueInput(normalizeProgrammaticInput(options.command!));
       }, delay);
     }
 
@@ -243,6 +247,7 @@ export function useTerminal(
     if (active && fitAddonRef.current) {
       requestAnimationFrame(() => {
         fitAddonRef.current?.fit();
+        termRef.current?.focus();
       });
     }
   }, [active]);
