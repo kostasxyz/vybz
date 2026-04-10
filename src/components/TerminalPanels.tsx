@@ -8,6 +8,7 @@ interface TerminalPanelsProps {
   showTerminals: boolean;
   tabs: Tab[];
   terminalFontSize: number;
+  onCloseTab: (tabId: string) => void;
 }
 
 export const TerminalPanels = memo(function TerminalPanels({
@@ -16,6 +17,7 @@ export const TerminalPanels = memo(function TerminalPanels({
   showTerminals,
   tabs,
   terminalFontSize,
+  onCloseTab,
 }: TerminalPanelsProps) {
   return (
     <div
@@ -33,7 +35,10 @@ export const TerminalPanels = memo(function TerminalPanels({
             key={tab.id}
             active={tab.id === activeTabId && showTerminals}
             command={tab.command}
+            execCommand={tab.execCommand}
             cwd={cwd}
+            label={tab.label}
+            onClose={() => onCloseTab(tab.id)}
             terminalFontSize={terminalFontSize}
           />
         );

@@ -99,6 +99,7 @@ export function MainArea() {
           projectId,
           label: name,
           command,
+          execCommand: Boolean(command),
         },
       });
     },
@@ -290,6 +291,7 @@ export function MainArea() {
         >
           <TerminalPanels
             activeTabId={activeTabId}
+            onCloseTab={closeTab}
             projectPathsById={projectPathsById}
             showTerminals={showTerminals}
             tabs={tabs}

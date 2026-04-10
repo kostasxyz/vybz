@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { invoke, Channel } from "@tauri-apps/api/core";
@@ -8,6 +8,41 @@ const textEncoder = new TextEncoder();
 const FALLBACK_TERMINAL_FONT = 'Menlo, Monaco, "Courier New", monospace';
 const STARTUP_COMMAND_IDLE_MS = 120;
 const STARTUP_COMMAND_FALLBACK_MS = 400;
+const STARTUP_REVEAL_FALLBACK_MS = 3000;
+
+// DEC private mode sequence for switching to the alternate screen buffer
+// (ESC [ ? 1 0 4 9 h). TUI tools like Claude Code, Codex, etc. emit this
+// as soon as they take over the screen — we use it as our signal that the
+// tool is fully rendered and it's safe to reveal the terminal.
+const ALT_SCREEN_ENABLE_SEQUENCE = new Uint8Array([
+  0x1b, 0x5b, 0x3f, 0x31, 0x30, 0x34, 0x39, 0x68,
+]);
+
+function containsSequence(haystack: Uint8Array, needle: Uint8Array) {
+  if (needle.length === 0 || haystack.length < needle.length) {
+    return false;
+  }
+  outer: for (let i = 0; i <= haystack.length - needle.length; i++) {
+    for (let j = 0; j < needle.length; j++) {
+      if (haystack[i + j] !== needle[j]) {
+        continue outer;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+function concatBytes(left: Uint8Array, right: Uint8Array) {
+  if (left.length === 0) {
+    return right;
+  }
+
+  const combined = new Uint8Array(left.length + right.length);
+  combined.set(left);
+  combined.set(right, left.length);
+  return combined;
+}
 
 function normalizeProgrammaticInput(input: string) {
   return input.replace(/\r?\n/g, "\r");
@@ -67,7 +102,9 @@ function syncTerminalAppearance(term: Terminal) {
 
 interface UseTerminalOptions {
   command?: string;
+  execCommand?: boolean;
   fontSize?: number;
+  onExit?: () => void;
 }
 
 export function useTerminal(
@@ -82,6 +119,8 @@ export function useTerminal(
   const commandTimerRef = useRef<number | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const termRef = useRef<Terminal | null>(null);
+  const hasStartupCommand = Boolean(options?.command);
+  const [loadingStartup, setLoadingStartup] = useState(hasStartupCommand);
 
   function flushInputBuffer() {
     const sessionId = sessionIdRef.current;
@@ -115,8 +154,22 @@ export function useTerminal(
   useEffect(() => {
     let alive = true;
     let startupCommandSent = false;
+    let revealed = !hasStartupCommand;
+    let revealFallbackTimer: number | null = null;
+    let outputDetectionTail = new Uint8Array(0);
+    let exitHandled = false;
     const container = containerRef.current;
     if (!container) return;
+
+    function reveal() {
+      if (revealed || !alive) return;
+      revealed = true;
+      if (revealFallbackTimer !== null) {
+        window.clearTimeout(revealFallbackTimer);
+        revealFallbackTimer = null;
+      }
+      setLoadingStartup(false);
+    }
 
     function clearStartupCommandTimer() {
       if (commandTimerRef.current !== null) {
@@ -140,6 +193,16 @@ export function useTerminal(
 
         startupCommandSent = true;
         queueInput(normalizeProgrammaticInput(options.command!));
+
+        // Fallback in case the tool doesn't enter the alt-screen buffer —
+        // reveal after a grace period so non-TUI commands aren't stuck
+        // behind the loading overlay forever.
+        if (revealFallbackTimer === null && !revealed) {
+          revealFallbackTimer = window.setTimeout(() => {
+            revealFallbackTimer = null;
+            reveal();
+          }, STARTUP_REVEAL_FALLBACK_MS);
+        }
       }, delay);
     }
 
@@ -157,22 +220,83 @@ export function useTerminal(
     fitAddonRef.current = fitAddon;
     termRef.current = term;
 
+    term.attachCustomKeyEventHandler((event) => {
+      if (
+        event.type === "keydown" &&
+        event.key === "Enter" &&
+        event.shiftKey &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey
+      ) {
+        event.preventDefault();
+        queueInput("\x1b\r");
+        return false;
+      }
+      return true;
+    });
+
+    const execMode = Boolean(options?.execCommand && options?.command);
+
     const onData = new Channel<number[]>();
+    const onExit = new Channel<boolean>();
     onData.onmessage = (data) => {
       if (alive) {
-        term.write(new Uint8Array(data));
+        const bytes = new Uint8Array(data);
+        const bytesForDetection = concatBytes(outputDetectionTail, bytes);
+        const sawAltScreen = containsSequence(
+          bytesForDetection,
+          ALT_SCREEN_ENABLE_SEQUENCE,
+        );
+        const detectionTailLength = Math.max(
+          ALT_SCREEN_ENABLE_SEQUENCE.length - 1,
+          0,
+        );
 
-        if (options?.command && !startupCommandSent) {
+        outputDetectionTail =
+          detectionTailLength === 0
+            ? new Uint8Array(0)
+            : bytesForDetection.slice(-detectionTailLength);
+
+        term.write(bytes);
+
+        // In interactive-shell mode we wait for the shell to settle before
+        // typing the startup command into the PTY. In exec mode the tool
+        // is already the PTY's root process so there's nothing to schedule.
+        if (!execMode && options?.command && !startupCommandSent) {
           scheduleStartupCommand(STARTUP_COMMAND_IDLE_MS);
         }
+
+        // Wait for the tool to switch into the alternate screen buffer
+        // before revealing. This keeps any shell startup noise hidden
+        // behind the overlay even in exec mode.
+        if (!revealed && sawAltScreen) {
+          reveal();
+        }
       }
+    };
+    onExit.onmessage = () => {
+      if (!alive || exitHandled) {
+        return;
+      }
+
+      exitHandled = true;
+      clearStartupCommandTimer();
+      if (revealFallbackTimer !== null) {
+        window.clearTimeout(revealFallbackTimer);
+        revealFallbackTimer = null;
+      }
+      setLoadingStartup(false);
+      options?.onExit?.();
     };
 
     invoke<string>("spawn_terminal", {
       cwd,
       cols: term.cols,
       rows: term.rows,
+      startupCommand: execMode ? options?.command : null,
       onData,
+      onExit,
     }).then((id) => {
       if (!alive) {
         invoke("kill_terminal", { sessionId: id });
@@ -188,9 +312,20 @@ export function useTerminal(
         void invoke("resize_terminal", { sessionId: id, cols, rows });
       });
 
-      // Auto-run command after shell initializes
-      if (options?.command) {
+      // Interactive-shell mode only: type the startup command into the
+      // shell after it has had a chance to draw its prompt. Exec mode
+      // already runs the command as the PTY's root process.
+      if (!execMode && options?.command) {
         scheduleStartupCommand(STARTUP_COMMAND_FALLBACK_MS);
+      } else if (execMode) {
+        // Safety net in case the tool produces no output for a while —
+        // don't leave the overlay stuck.
+        if (revealFallbackTimer === null && !revealed) {
+          revealFallbackTimer = window.setTimeout(() => {
+            revealFallbackTimer = null;
+            reveal();
+          }, STARTUP_REVEAL_FALLBACK_MS);
+        }
       }
     });
 
@@ -220,6 +355,10 @@ export function useTerminal(
       if (inputFlushTimerRef.current !== null) {
         window.clearTimeout(inputFlushTimerRef.current);
         inputFlushTimerRef.current = null;
+      }
+      if (revealFallbackTimer !== null) {
+        window.clearTimeout(revealFallbackTimer);
+        revealFallbackTimer = null;
       }
       clearStartupCommandTimer();
       inputBufferRef.current = "";
@@ -251,4 +390,6 @@ export function useTerminal(
       });
     }
   }, [active]);
+
+  return { loadingStartup };
 }

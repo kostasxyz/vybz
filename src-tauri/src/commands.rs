@@ -9,9 +9,11 @@ pub fn spawn_terminal(
     cwd: String,
     cols: u16,
     rows: u16,
+    startup_command: Option<String>,
     on_data: Channel<Vec<u8>>,
+    on_exit: Channel<bool>,
 ) -> Result<String, String> {
-    state.spawn_session(&cwd, cols, rows, on_data)
+    state.spawn_session(&cwd, cols, rows, startup_command, on_data, on_exit)
 }
 
 #[tauri::command]

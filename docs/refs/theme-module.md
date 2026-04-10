@@ -20,9 +20,12 @@ The current UI templates are:
 
 The current terminal themes are:
 
+- `ayu`
 - `night-owl`
 - `solarized-dark`
 - `solarized-light`
+- `github-light`
+- `amber-light`
 - `tokyo-night`
 - `synthwave`
 
@@ -62,9 +65,12 @@ type ThemeTemplateId =
   | "solar-dusk"
   | "synthwave";
 type TerminalThemeId =
+  | "ayu"
   | "night-owl"
   | "solarized-dark"
   | "solarized-light"
+  | "github-light"
+  | "amber-light"
   | "tokyo-night"
   | "synthwave";
 

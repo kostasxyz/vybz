@@ -32,7 +32,9 @@ impl PtyManager {
         cwd: &str,
         cols: u16,
         rows: u16,
+        startup_command: Option<String>,
         channel: Channel<Vec<u8>>,
+        exit_channel: Channel<bool>,
     ) -> Result<String, String> {
         let pty_system = native_pty_system();
 
@@ -50,6 +52,18 @@ impl PtyManager {
         cmd.cwd(cwd);
         if cmd.get_env("TERM").is_none() {
             cmd.env("TERM", DEFAULT_TERM);
+        }
+
+        // When a startup command is supplied, run the shell as a
+        // non-interactive login shell that execs straight into that command.
+        // This avoids the visible shell prompt + echoed command that would
+        // otherwise flash before the tool takes over the terminal.
+        if let Some(startup) = startup_command.as_deref().map(str::trim) {
+            if !startup.is_empty() {
+                cmd.arg("-l");
+                cmd.arg("-c");
+                cmd.arg(startup);
+            }
         }
 
         let child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
@@ -73,6 +87,8 @@ impl PtyManager {
                     Err(_) => break,
                 }
             }
+
+            let _ = exit_channel.send(true);
         });
 
         let id = Uuid::new_v4().to_string();

@@ -82,6 +82,56 @@
   --terminal-ansi-bright-white: #fdf6e3;
 }
 
+:root[data-terminal-theme="github-light"] {
+  --terminal-background: #ffffff;
+  --terminal-foreground: #24292e;
+  --terminal-cursor: #0366d6;
+  --terminal-cursor-accent: #ffffff;
+  --terminal-selection-background: rgba(3, 102, 214, 0.2);
+  --terminal-selection-inactive-background: rgba(3, 102, 214, 0.12);
+  --terminal-ansi-black: #24292e;
+  --terminal-ansi-red: #d73a49;
+  --terminal-ansi-green: #22863a;
+  --terminal-ansi-yellow: #b08800;
+  --terminal-ansi-blue: #0366d6;
+  --terminal-ansi-magenta: #6f42c1;
+  --terminal-ansi-cyan: #1b7c83;
+  --terminal-ansi-white: #6a737d;
+  --terminal-ansi-bright-black: #959da5;
+  --terminal-ansi-bright-red: #cb2431;
+  --terminal-ansi-bright-green: #28a745;
+  --terminal-ansi-bright-yellow: #dbab09;
+  --terminal-ansi-bright-blue: #2188ff;
+  --terminal-ansi-bright-magenta: #8a63d2;
+  --terminal-ansi-bright-cyan: #3192aa;
+  --terminal-ansi-bright-white: #d1d5da;
+}
+
+:root[data-terminal-theme="amber-light"] {
+  --terminal-background: #fbf7f0;
+  --terminal-foreground: #3e2e1c;
+  --terminal-cursor: #b45309;
+  --terminal-cursor-accent: #fbf7f0;
+  --terminal-selection-background: rgba(180, 83, 9, 0.2);
+  --terminal-selection-inactive-background: rgba(180, 83, 9, 0.12);
+  --terminal-ansi-black: #3e2e1c;
+  --terminal-ansi-red: #b91c1c;
+  --terminal-ansi-green: #5b7a1a;
+  --terminal-ansi-yellow: #b45309;
+  --terminal-ansi-blue: #1d4ed8;
+  --terminal-ansi-magenta: #9333ea;
+  --terminal-ansi-cyan: #0e7490;
+  --terminal-ansi-white: #8a7968;
+  --terminal-ansi-bright-black: #6b5b47;
+  --terminal-ansi-bright-red: #dc2626;
+  --terminal-ansi-bright-green: #84a32a;
+  --terminal-ansi-bright-yellow: #d97706;
+  --terminal-ansi-bright-blue: #2563eb;
+  --terminal-ansi-bright-magenta: #a855f7;
+  --terminal-ansi-bright-cyan: #0891b2;
+  --terminal-ansi-bright-white: #e8ddc7;
+}
+
 :root[data-terminal-theme="tokyo-night"] {
   --terminal-background: #1a1b26;
   --terminal-foreground: #a9b1d6;
@@ -1057,12 +1107,156 @@ body,
   background: var(--terminal-background);
 }
 
+.terminal-wrapper {
+  position: absolute;
+  inset: 0;
+}
+
 .terminal-container {
   position: absolute;
   inset: 0;
   padding: 10px;
   background: var(--terminal-background);
   box-sizing: border-box;
+}
+
+.terminal-startup-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--terminal-background);
+  z-index: 2;
+  animation: terminal-startup-fade-in 120ms ease-out;
+}
+
+.terminal-startup-spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--terminal-foreground);
+  border-top-color: transparent;
+  opacity: 0.5;
+  animation: terminal-startup-spin 0.8s linear infinite;
+}
+
+.terminal-exit-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(
+    in srgb,
+    var(--terminal-background) 70%,
+    transparent
+  );
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: terminal-exit-fade-in 140ms ease-out;
+}
+
+.terminal-exit-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 260px;
+  max-width: min(340px, calc(100% - 48px));
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.04);
+  font-family: var(--font-sans);
+}
+
+.terminal-exit-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+  color: var(--foreground);
+}
+
+.terminal-exit-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: -8px;
+}
+
+.terminal-exit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.terminal-exit-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+  color: var(--foreground);
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.terminal-exit-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--ring);
+}
+
+.terminal-exit-btn:focus-visible {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 35%, transparent);
+}
+
+.terminal-exit-btn.primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.terminal-exit-btn.primary:hover {
+  background: color-mix(in srgb, var(--primary) 88%, white 12%);
+  border-color: color-mix(in srgb, var(--primary) 88%, white 12%);
+}
+
+@keyframes terminal-exit-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes terminal-startup-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes terminal-startup-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .empty-state {

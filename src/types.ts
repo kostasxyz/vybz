@@ -43,6 +43,13 @@ export interface Tab {
   projectId: string;
   label: string;
   command?: string;
+  /**
+   * When true, `command` is executed directly as the PTY's root process
+   * via `$SHELL -l -c <command>` instead of being typed into an
+   * interactive shell. Used for AI tool tabs so no shell prompt flashes
+   * before the tool takes over the terminal.
+   */
+  execCommand?: boolean;
 }
 
 export interface AppState {

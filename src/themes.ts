@@ -11,6 +11,8 @@ export type TerminalThemeId =
   | "night-owl"
   | "solarized-dark"
   | "solarized-light"
+  | "github-light"
+  | "amber-light"
   | "tokyo-night"
   | "synthwave";
 
@@ -158,6 +160,26 @@ export const TERMINAL_THEMES: TerminalThemeDefinition[] = [
     },
   },
   {
+    id: "github-light",
+    name: "GitHub Light",
+    description: "Clean light palette with cool blue accents to pair with the Native template.",
+    preview: {
+      background: "#ffffff",
+      foreground: "#24292e",
+      accent: "#0366d6",
+    },
+  },
+  {
+    id: "amber-light",
+    name: "Amber Light",
+    description: "Warm ivory background with amber highlights to pair with the Amber template.",
+    preview: {
+      background: "#fbf7f0",
+      foreground: "#3e2e1c",
+      accent: "#b45309",
+    },
+  },
+  {
     id: "tokyo-night",
     name: "Tokyo Night",
     description: "A dark theme inspired by Tokyo neon lights at night.",
@@ -200,6 +222,8 @@ export function isTerminalThemeId(value: unknown): value is TerminalThemeId {
     value === "night-owl" ||
     value === "solarized-dark" ||
     value === "solarized-light" ||
+    value === "github-light" ||
+    value === "amber-light" ||
     value === "tokyo-night" ||
     value === "synthwave"
   );
