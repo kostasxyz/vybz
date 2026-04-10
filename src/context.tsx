@@ -256,6 +256,26 @@ function reducer(state: AppState, action: Action): AppState {
       return state.editors === action.editors
         ? state
         : { ...state, editors: action.editors };
+    case "IMPORT_SETTINGS": {
+      // Replace persisted settings while keeping ephemeral session state
+      // (tabs, active*, view) intact. Tabs that reference removed projects
+      // are dropped via normalizeState.
+      const next: AppState = {
+        ...state,
+        projects: action.settings.projects,
+        tools: action.settings.tools,
+        editors: action.settings.editors,
+        uiFontSize: action.settings.uiFontSize,
+        terminalFontSize: action.settings.terminalFontSize,
+        themeMode: action.settings.themeMode,
+        themeTemplate: action.settings.themeTemplate,
+        terminalTheme: action.settings.terminalTheme,
+        tabs: state.tabs.filter((tab) =>
+          action.settings.projects.some((project) => project.id === tab.projectId),
+        ),
+      };
+      return normalizeState(next);
+    }
     case "SET_VIEW":
       return state.view === action.view ? state : { ...state, view: action.view };
     default:

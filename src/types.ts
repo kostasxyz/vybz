@@ -87,4 +87,17 @@ export type Action =
   | { type: "SET_TERMINAL_THEME"; theme: TerminalThemeId }
   | { type: "SET_TOOLS"; tools: ToolConfig[] }
   | { type: "SET_EDITORS"; editors: EditorConfig[] }
+  | {
+      type: "IMPORT_SETTINGS";
+      settings: {
+        projects: Project[];
+        tools: ToolConfig[];
+        editors: EditorConfig[];
+        uiFontSize: number;
+        terminalFontSize: number;
+        themeMode: ThemeMode;
+        themeTemplate: ThemeTemplateId;
+        terminalTheme: TerminalThemeId;
+      };
+    }
   | { type: "SET_VIEW"; view: "terminals" | "settings" | "project-settings" };

@@ -1,4 +1,7 @@
 import { useRef, useState, type ReactElement } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { homeDir, join } from "@tauri-apps/api/path";
+import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { useAppDispatch, useAppSelector } from "../context";
 import { EditorConfig, ToolConfig } from "../types";
 import { EditorIcon } from "./EditorIcon";
@@ -8,6 +11,13 @@ import {
   TERMINAL_THEMES,
   type ThemeMode,
 } from "../themes";
+import {
+  buildExportPayload,
+  defaultExportFileName,
+  ImportError,
+  parseImportPayload,
+  serializeExportPayload,
+} from "../exportImport";
 
 const THEME_MODE_ICONS: Record<ThemeMode, ReactElement> = {
   system: (
@@ -42,12 +52,19 @@ export function SettingsView() {
   const themeTemplate = useAppSelector((state) => state.themeTemplate);
   const terminalTheme = useAppSelector((state) => state.terminalTheme);
   const uiFontSize = useAppSelector((state) => state.uiFontSize);
+  const terminalFontSize = useAppSelector((state) => state.terminalFontSize);
+  const projects = useAppSelector((state) => state.projects);
   const tools = useAppSelector((state) => state.tools);
   const editors = useAppSelector((state) => state.editors);
   const [newToolName, setNewToolName] = useState("");
   const [newToolCmd, setNewToolCmd] = useState("");
   const [newEditorName, setNewEditorName] = useState("");
   const [newEditorCmd, setNewEditorCmd] = useState("");
+  const [backupStatus, setBackupStatus] = useState<
+    | { kind: "idle" }
+    | { kind: "info"; message: string }
+    | { kind: "error"; message: string }
+  >({ kind: "idle" });
 
   function adjustUiFontSize(delta: number) {
     const next = Math.min(24, Math.max(10, uiFontSize + delta));
@@ -144,6 +161,73 @@ export function SettingsView() {
         e.id === editorId ? { ...e, enabled: e.enabled === false ? true : false } : e,
       ),
     });
+  }
+
+  // Backup & restore handlers
+  async function handleExportSettings() {
+    setBackupStatus({ kind: "idle" });
+    try {
+      const payload = buildExportPayload({
+        projects,
+        tools,
+        editors,
+        uiFontSize,
+        terminalFontSize,
+        themeMode,
+        themeTemplate,
+        terminalTheme,
+      });
+      const home = await homeDir();
+      const defaultPath = await join(home, defaultExportFileName());
+      const targetPath = await saveDialog({
+        title: "Export Vybz Settings",
+        defaultPath,
+        filters: [{ name: "JSON", extensions: ["json"] }],
+      });
+      if (!targetPath) return;
+      await invoke("write_text_file", {
+        path: targetPath,
+        contents: serializeExportPayload(payload),
+      });
+      setBackupStatus({
+        kind: "info",
+        message: `Exported to ${targetPath}`,
+      });
+    } catch (error) {
+      setBackupStatus({
+        kind: "error",
+        message: `Export failed: ${(error as Error).message ?? String(error)}`,
+      });
+    }
+  }
+
+  async function handleImportSettings() {
+    setBackupStatus({ kind: "idle" });
+    try {
+      const home = await homeDir();
+      const selected = await openDialog({
+        title: "Import Vybz Settings",
+        multiple: false,
+        defaultPath: home,
+        filters: [{ name: "JSON", extensions: ["json"] }],
+      });
+      if (!selected || Array.isArray(selected)) return;
+      const raw = await invoke<string>("read_text_file", { path: selected });
+      const imported = parseImportPayload(raw);
+      dispatch({ type: "IMPORT_SETTINGS", settings: imported });
+      setBackupStatus({
+        kind: "info",
+        message: `Imported ${imported.projects.length} project${
+          imported.projects.length === 1 ? "" : "s"
+        } and settings.`,
+      });
+    } catch (error) {
+      const message =
+        error instanceof ImportError
+          ? error.message
+          : (error as Error).message ?? String(error);
+      setBackupStatus({ kind: "error", message: `Import failed: ${message}` });
+    }
   }
 
   return (
@@ -492,6 +576,44 @@ export function SettingsView() {
             Add
           </button>
         </div>
+      </div>
+
+      <div className="settings-section">
+        <h3 className="settings-section-title">Backup &amp; Restore</h3>
+        <span
+          className="settings-help"
+          style={{ marginBottom: 12, display: "block" }}
+        >
+          Export your projects, custom commands, agent tools, editors, font
+          sizes, and theme to a JSON file — or restore from one. Open
+          terminal sessions are not included.
+        </span>
+
+        <div className="backup-actions">
+          <button
+            type="button"
+            className="backup-btn primary"
+            onClick={handleExportSettings}
+          >
+            Export Settings
+          </button>
+          <button
+            type="button"
+            className="backup-btn"
+            onClick={handleImportSettings}
+          >
+            Import Settings
+          </button>
+        </div>
+
+        {backupStatus.kind !== "idle" && (
+          <div
+            className={`backup-status backup-status-${backupStatus.kind}`}
+            role="status"
+          >
+            {backupStatus.message}
+          </div>
+        )}
       </div>
     </div>
   );

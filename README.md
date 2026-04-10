@@ -2,6 +2,17 @@
 
 Vybz is a Tauri desktop app for managing multiple project terminal sessions. Each project gets a color-coded sidebar entry and tabbed terminals that can run shells or AI coding tools.
 
+## Screenshots
+
+![Vybz main view](docs/assets/screenshot_01.jpg)
+![Tool tab](docs/assets/screenshot_02.jpg)
+
+![Theme picker](docs/assets/screenshot_03.jpg)
+![Project settings](docs/assets/screenshot_04.jpg)
+
+![Settings view](docs/assets/screenshot_05.jpg)
+![Settings view](docs/assets/screenshot_06.jpg)
+---
 ## Stack
 
 - Tauri v2

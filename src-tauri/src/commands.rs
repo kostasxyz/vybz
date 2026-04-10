@@ -1,3 +1,4 @@
+use std::fs;
 use std::process::Command;
 use tauri::{ipc::Channel, State};
 
@@ -54,4 +55,14 @@ pub fn open_in_editor(editor: String, path: String) -> Result<(), String> {
         .spawn()
         .map(|_| ())
         .map_err(|e| format!("Failed to open {}: {}", editor, e))
+}
+
+#[tauri::command]
+pub fn read_text_file(path: String) -> Result<String, String> {
+    fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {}", path, e))
+}
+
+#[tauri::command]
+pub fn write_text_file(path: String, contents: String) -> Result<(), String> {
+    fs::write(&path, contents).map_err(|e| format!("Failed to write {}: {}", path, e))
 }
