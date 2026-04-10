@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::io::{Read, Write};
+use std::process::Command;
 use std::sync::Mutex;
 use std::thread::{self, JoinHandle};
 
@@ -8,6 +9,56 @@ use tauri::ipc::Channel;
 use uuid::Uuid;
 
 const DEFAULT_TERM: &str = "xterm-256color";
+
+/// Capture the user's interactive shell environment so spawned PTY children
+/// see the same PATH and other env vars they would in a normal terminal
+/// session. Bundled .app launches inherit only launchd's minimal env, which
+/// is missing Homebrew, mise/fnm/nvm, language-specific paths, and locale —
+/// causing TUI tools like Claude Code to die immediately on first I/O.
+fn capture_user_env() -> Vec<(String, String)> {
+    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
+    // -i (interactive) sources .zshrc / .bashrc, -l (login) sources
+    // .zprofile / .zlogin / .profile. We dump the resulting env via
+    // `printenv` (more portable than `export -p`) wrapped with sentinels
+    // so we can parse a clean block even if dotfiles emit greetings.
+    let script = "printf '__VYBZ_ENV_BEGIN__\\n'; printenv; printf '__VYBZ_ENV_END__\\n'";
+    let output = Command::new(&shell)
+        .arg("-ilc")
+        .arg(script)
+        .output();
+
+    let Ok(output) = output else {
+        eprintln!("[vybz] failed to launch shell to capture env");
+        return Vec::new();
+    };
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut env = Vec::new();
+    let mut in_block = false;
+    for line in stdout.lines() {
+        if line == "__VYBZ_ENV_BEGIN__" {
+            in_block = true;
+            continue;
+        }
+        if line == "__VYBZ_ENV_END__" {
+            break;
+        }
+        if !in_block {
+            continue;
+        }
+        if let Some((key, value)) = line.split_once('=') {
+            // Skip a few that we set ourselves or that should not be
+            // inherited from the user shell snapshot.
+            if matches!(key, "_" | "OLDPWD" | "PWD" | "SHLVL") {
+                continue;
+            }
+            env.push((key.to_string(), value.to_string()));
+        }
+    }
+
+    eprintln!("[vybz] captured {} user env vars", env.len());
+    env
+}
 
 struct Session {
     writer: Box<dyn Write + Send>,
@@ -18,12 +69,14 @@ struct Session {
 
 pub struct PtyManager {
     sessions: Mutex<HashMap<String, Session>>,
+    user_env: Vec<(String, String)>,
 }
 
 impl PtyManager {
     pub fn new() -> Self {
         Self {
             sessions: Mutex::new(HashMap::new()),
+            user_env: capture_user_env(),
         }
     }
 
@@ -50,19 +103,30 @@ impl PtyManager {
         let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
         let mut cmd = CommandBuilder::new(&shell);
         cmd.cwd(cwd);
+
+        // Apply the user-shell environment we captured at app startup so
+        // PATH, locale, language tooling, etc. match what the user sees in
+        // their normal terminal. Without this, bundled .app launches inherit
+        // only launchd's minimal env and most CLI tools fail to start.
+        for (key, value) in &self.user_env {
+            cmd.env(key, value);
+        }
+
         if cmd.get_env("TERM").is_none() {
             cmd.env("TERM", DEFAULT_TERM);
         }
 
-        // When a startup command is supplied, run the shell as a
-        // non-interactive login shell that execs straight into that command.
-        // This avoids the visible shell prompt + echoed command that would
-        // otherwise flash before the tool takes over the terminal.
+        // When a startup command is supplied, exec it through the shell
+        // with `-c 'exec <cmd>'`. The `exec` prefix tells the shell to
+        // replace itself with the command rather than fork it as a child,
+        // so the tool inherits the shell's PID, session, and PTY ownership
+        // directly. Without this, non-interactive zsh doesn't set up job
+        // control / terminal-group transfer, and TUI tools (Claude Code,
+        // Codex, etc.) bail when they can't take control of the terminal.
         if let Some(startup) = startup_command.as_deref().map(str::trim) {
             if !startup.is_empty() {
-                cmd.arg("-l");
                 cmd.arg("-c");
-                cmd.arg(startup);
+                cmd.arg(format!("exec {}", startup));
             }
         }
 
