@@ -11,6 +11,7 @@ import { ProjectCommand, Tab } from "../types";
 import { TabBar } from "./TabBar";
 import { SettingsView } from "./SettingsView";
 import { ProjectSettingsView } from "./ProjectSettingsView";
+import { ProjectEmptyState } from "./ProjectEmptyState";
 
 const TerminalPanels = lazy(async () => ({
   default: (await import("./TerminalPanels")).TerminalPanels,
@@ -169,15 +170,9 @@ export function MainArea() {
   );
 
   useEffect(() => {
-    if (!activeProjectId) {
+    if (!activeProjectId || activeProjectTabs.length === 0) {
       return;
     }
-
-    if (activeProjectTabs.length === 0) {
-      addTab(activeProjectId, "Shell");
-      return;
-    }
-
 
     const currentTabProjectId = activeTabId
       ? tabProjectIdById.get(activeTabId) ?? null
@@ -193,7 +188,6 @@ export function MainArea() {
     activeProjectId,
     activeProjectTabs,
     activeTabId,
-    addTab,
     dispatch,
     tabProjectIdById,
   ]);
@@ -256,6 +250,7 @@ export function MainArea() {
 
   const showTerminals = view === "terminals";
   const activeProjectCommands = activeProject?.commands ?? EMPTY_COMMANDS;
+  const showTerminalPanels = showTerminals && activeProjectTabs.length > 0;
 
   return (
     <div className="main-area">
@@ -275,17 +270,20 @@ export function MainArea() {
           tabs={activeProjectTabs}
         />
       )}
-      {showTerminals && tabs.length === 0 && !activeProjectId && (
+      {showTerminals && !activeProjectId && (
         <div className="empty-state">
           <p>Add a project to get started</p>
         </div>
+      )}
+      {showTerminals && activeProjectId && activeProjectTabs.length === 0 && (
+        <ProjectEmptyState tools={tools} onPickTool={addToolTab} />
       )}
       {tabs.length > 0 && (
         <Suspense
           fallback={
             <div
               className="terminal-area"
-              style={{ display: showTerminals ? undefined : "none" }}
+              style={{ display: showTerminalPanels ? undefined : "none" }}
             />
           }
         >
@@ -293,7 +291,7 @@ export function MainArea() {
             activeTabId={activeTabId}
             onCloseTab={closeTab}
             projectPathsById={projectPathsById}
-            showTerminals={showTerminals}
+            showTerminals={showTerminalPanels}
             tabs={tabs}
             terminalFontSize={terminalFontSize}
             tools={tools}

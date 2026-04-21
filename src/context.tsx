@@ -175,7 +175,7 @@ function reducer(state: AppState, action: Action): AppState {
     case "SET_ACTIVE_PROJECT":
       return state.activeProjectId === action.id
         ? state
-        : { ...state, activeProjectId: action.id };
+        : normalizeState({ ...state, activeProjectId: action.id });
     case "SET_TABS":
       return state.tabs === action.tabs ? state : { ...state, tabs: action.tabs };
     case "ADD_TAB":
