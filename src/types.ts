@@ -6,6 +6,18 @@ export const PROJECT_COLORS = [
   "#7ec8e3", "#c3e88d", "#f78c6c", "#bb80b3",
 ] as const;
 
+/**
+ * How a tool interprets Shift+Enter bytes coming from the terminal.
+ *
+ * - `legacyAltEnter` (default): send `\x1b\r` (ESC + CR). TUIs that treat
+ *   Alt+Enter as "insert newline" (Claude Code, Codex, OpenCode, …) accept
+ *   this.
+ * - `modifyOtherKeys`: send `\x1b[27;2;13~` (xterm modifyOtherKeys encoding
+ *   of Shift+Enter). Required by tools that distinguish Shift+Enter from
+ *   Alt+Enter, e.g. Pi — its Alt+Enter is bound to "Queue follow-up".
+ */
+export type ShiftEnterMode = "legacyAltEnter" | "modifyOtherKeys";
+
 export interface ToolConfig {
   id: string;
   name: string;
@@ -13,6 +25,7 @@ export interface ToolConfig {
   builtin?: boolean;
   enabled?: boolean;
   iconUrl?: string;
+  shiftEnterMode?: ShiftEnterMode;
 }
 
 export interface EditorConfig {

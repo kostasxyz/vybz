@@ -7,7 +7,14 @@ export const DEFAULT_TOOLS: ToolConfig[] = [
   { id: "claude", name: "Claude", cmd: "claude", builtin: true, enabled: true },
   { id: "codex", name: "Codex", cmd: "codex", builtin: true, enabled: true },
   { id: "opencode", name: "OpenCode", cmd: "opencode", builtin: true, enabled: true },
-  { id: "pi", name: "Pi", cmd: "pi", builtin: true, enabled: true },
+  {
+    id: "pi",
+    name: "Pi",
+    cmd: "pi",
+    builtin: true,
+    enabled: true,
+    shiftEnterMode: "modifyOtherKeys",
+  },
 ];
 
 export const DEFAULT_EDITORS: EditorConfig[] = [

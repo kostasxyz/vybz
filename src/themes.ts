@@ -4,7 +4,9 @@ export type ThemeTemplateId =
   | "t3chat"
   | "solar-dusk"
   | "synthwave"
-  | "purple";
+  | "purple"
+  | "warp"
+  | "emdash";
 
 export type TerminalThemeId =
   | "ayu"
@@ -14,7 +16,9 @@ export type TerminalThemeId =
   | "github-light"
   | "amber-light"
   | "tokyo-night"
-  | "synthwave";
+  | "synthwave"
+  | "warp"
+  | "emdash";
 
 export type ThemeMode = "system" | "light" | "dark";
 export type ResolvedThemeMode = Exclude<ThemeMode, "system">;
@@ -116,6 +120,26 @@ export const THEME_TEMPLATES: ThemeTemplateDefinition[] = [
       accent: "#7c3aed",
     },
   },
+  {
+    id: "warp",
+    name: "Warp",
+    description: "Dark green-ink chrome with sage accents inspired by the Warp terminal.",
+    preview: {
+      light: "#edf1e6",
+      dark: "#0c110e",
+      accent: "#88c878",
+    },
+  },
+  {
+    id: "emdash",
+    name: "Emdash",
+    description: "Cool slate canvas with terracotta accent and soft diff tones.",
+    preview: {
+      light: "#dde3ec",
+      dark: "#1c232c",
+      accent: "#d17b5a",
+    },
+  },
 ];
 
 export const TERMINAL_THEMES: TerminalThemeDefinition[] = [
@@ -199,6 +223,26 @@ export const TERMINAL_THEMES: TerminalThemeDefinition[] = [
       accent: "#ff4fd8",
     },
   },
+  {
+    id: "warp",
+    name: "Warp",
+    description: "Dark green canvas with sage keywords and teal strings to match the Warp terminal.",
+    preview: {
+      background: "#0c110e",
+      foreground: "#d5dad4",
+      accent: "#88c878",
+    },
+  },
+  {
+    id: "emdash",
+    name: "Emdash",
+    description: "Cool slate canvas with terracotta cursor, soft diff red/green, and teal strings.",
+    preview: {
+      background: "#151b23",
+      foreground: "#c9d1d9",
+      accent: "#d17b5a",
+    },
+  },
 ];
 
 export function isThemeMode(value: unknown): value is ThemeMode {
@@ -212,7 +256,9 @@ export function isThemeTemplateId(value: unknown): value is ThemeTemplateId {
     value === "t3chat" ||
     value === "solar-dusk" ||
     value === "synthwave" ||
-    value === "purple"
+    value === "purple" ||
+    value === "warp" ||
+    value === "emdash"
   );
 }
 
@@ -225,7 +271,9 @@ export function isTerminalThemeId(value: unknown): value is TerminalThemeId {
     value === "github-light" ||
     value === "amber-light" ||
     value === "tokyo-night" ||
-    value === "synthwave"
+    value === "synthwave" ||
+    value === "warp" ||
+    value === "emdash"
   );
 }
 

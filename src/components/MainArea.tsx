@@ -296,6 +296,7 @@ export function MainArea() {
             showTerminals={showTerminals}
             tabs={tabs}
             terminalFontSize={terminalFontSize}
+            tools={tools}
           />
         </Suspense>
       )}

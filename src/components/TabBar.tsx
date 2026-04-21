@@ -1,6 +1,7 @@
 import { memo, useState, useRef, useEffect, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Tab, ProjectCommand, EditorConfig, ToolConfig } from "../types";
+import { buildCommandToToolMap, resolveTabTool } from "../tool-resolution";
 import { EditorIcon } from "./EditorIcon";
 import { ToolIcon } from "./ToolIcon";
 
@@ -31,15 +32,7 @@ export const TabBar = memo(function TabBar({
   const runRef = useRef<HTMLDivElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
 
-  const commandToTool = useMemo(() => {
-    const map = new Map<string, ToolConfig>();
-    for (const tool of tools) {
-      if (tool.cmd) {
-        map.set(`${tool.cmd}\r`, tool);
-      }
-    }
-    return map;
-  }, [tools]);
+  const commandToTool = useMemo(() => buildCommandToToolMap(tools), [tools]);
 
   const enabledTools = useMemo(
     () => tools.filter((t) => t.enabled !== false),
@@ -90,8 +83,7 @@ export const TabBar = memo(function TabBar({
   }
 
   function getTabTool(tab: Tab): ToolConfig | undefined {
-    if (!tab.command) return tools.find((t) => t.id === "shell");
-    return commandToTool.get(tab.command);
+    return resolveTabTool(tab, tools, commandToTool);
   }
 
   return (

@@ -7,6 +7,7 @@ interface TerminalViewProps {
   active: boolean;
   command?: string;
   execCommand?: boolean;
+  shiftEnterSequence?: string;
   terminalFontSize?: number;
   onClose: () => void;
 }
@@ -16,6 +17,7 @@ interface TerminalSessionProps {
   active: boolean;
   command?: string;
   execCommand?: boolean;
+  shiftEnterSequence?: string;
   terminalFontSize?: number;
   onExit: () => void;
 }
@@ -25,6 +27,7 @@ function TerminalSessionComponent({
   active,
   command,
   execCommand,
+  shiftEnterSequence,
   terminalFontSize,
   onExit,
 }: TerminalSessionProps) {
@@ -33,6 +36,7 @@ function TerminalSessionComponent({
     command,
     execCommand,
     fontSize: terminalFontSize,
+    shiftEnterSequence,
     onExit,
   });
 
@@ -56,6 +60,7 @@ export const TerminalView = memo(function TerminalView({
   active,
   command,
   execCommand,
+  shiftEnterSequence,
   terminalFontSize,
   onClose,
 }: TerminalViewProps) {
@@ -83,6 +88,7 @@ export const TerminalView = memo(function TerminalView({
         cwd={cwd}
         execCommand={execCommand}
         onExit={handleExit}
+        shiftEnterSequence={shiftEnterSequence}
         terminalFontSize={terminalFontSize}
       />
       {hasExited ? (

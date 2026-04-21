@@ -17,6 +17,9 @@ The current UI templates are:
 - `t3chat`
 - `solar-dusk`
 - `synthwave`
+- `purple`
+- `warp`
+- `emdash`
 
 The current terminal themes are:
 
@@ -28,6 +31,8 @@ The current terminal themes are:
 - `amber-light`
 - `tokyo-night`
 - `synthwave`
+- `warp`
+- `emdash`
 
 ## Main Files
 

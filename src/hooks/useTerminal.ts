@@ -104,8 +104,18 @@ interface UseTerminalOptions {
   command?: string;
   execCommand?: boolean;
   fontSize?: number;
+  /**
+   * Bytes to emit when the user presses Shift+Enter. Defaults to
+   * `\x1b\r` (legacy Alt+Enter), which most Ink-based TUIs (Claude Code,
+   * Codex, OpenCode) treat as "insert newline". Tools that require the
+   * xterm modifyOtherKeys encoding (e.g. Pi) override via their
+   * `ToolConfig.shiftEnterMode`.
+   */
+  shiftEnterSequence?: string;
   onExit?: () => void;
 }
+
+const DEFAULT_SHIFT_ENTER_SEQUENCE = "\x1b\r";
 
 export function useTerminal(
   containerRef: React.RefObject<HTMLDivElement | null>,
@@ -119,6 +129,11 @@ export function useTerminal(
   const commandTimerRef = useRef<number | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const termRef = useRef<Terminal | null>(null);
+  const shiftEnterSequenceRef = useRef(
+    options?.shiftEnterSequence ?? DEFAULT_SHIFT_ENTER_SEQUENCE,
+  );
+  shiftEnterSequenceRef.current =
+    options?.shiftEnterSequence ?? DEFAULT_SHIFT_ENTER_SEQUENCE;
   const hasStartupCommand = Boolean(options?.command);
   const [loadingStartup, setLoadingStartup] = useState(hasStartupCommand);
 
@@ -230,7 +245,7 @@ export function useTerminal(
         !event.altKey
       ) {
         event.preventDefault();
-        queueInput("\x1b\r");
+        queueInput(shiftEnterSequenceRef.current);
         return false;
       }
       return true;
