@@ -1,15 +1,19 @@
-import { useRef, useState, type ReactElement } from "react";
+import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { homeDir, join } from "@tauri-apps/api/path";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { useAppDispatch, useAppSelector } from "../context";
-import { EditorConfig, ToolConfig } from "../types";
+import { Action, EditorConfig, ToolConfig } from "../types";
 import { EditorIcon } from "./EditorIcon";
 import { ToolIcon } from "./ToolIcon";
+import { ProjectColorPicker } from "./ProjectColorPicker";
 import {
-  THEME_TEMPLATES,
+  APP_THEMES,
+  AppTheme,
   TERMINAL_THEMES,
-  type ThemeMode,
+  getTerminalTheme,
+  getThemeColors,
+  type ThemeColors,
 } from "../themes";
 import {
   buildExportPayload,
@@ -19,38 +23,139 @@ import {
   serializeExportPayload,
 } from "../exportImport";
 
-const THEME_MODE_ICONS: Record<ThemeMode, ReactElement> = {
-  system: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="3" width="12" height="9" rx="1" />
-      <path d="M5 14h6" />
-      <path d="M8 12v2" />
-    </svg>
-  ),
-  light: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="8" cy="8" r="3" />
-      <path d="M8 1.5v1M8 13.5v1M1.5 8h1M13.5 8h1M3.4 3.4l.7.7M11.9 11.9l.7.7M3.4 12.6l.7-.7M11.9 4.1l.7-.7" />
-    </svg>
-  ),
-  dark: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M13.5 8.5a5.5 5.5 0 1 1-6-6 4.5 4.5 0 0 0 6 6z" />
-    </svg>
-  ),
-};
-
-const THEME_MODE_OPTIONS: Array<{ value: ThemeMode; label: string }> = [
-  { value: "system", label: "System" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
+const COLOR_FIELDS: Array<{ key: keyof ThemeColors; label: string }> = [
+  { key: "accent", label: "Accent" },
+  { key: "background", label: "Background" },
+  { key: "foreground", label: "Foreground" },
 ];
+
+interface ThemePickerProps {
+  label: string;
+  themes: AppTheme[];
+  activeId: string;
+  colors: ThemeColors;
+  onSelectTheme: (id: string) => Action;
+  onChangeColor: (themeId: string, key: keyof ThemeColors, value: string) => Action;
+  popoverScope: string;
+}
+
+function ThemePicker({
+  label,
+  themes,
+  activeId,
+  colors,
+  onSelectTheme,
+  onChangeColor,
+  popoverScope,
+}: ThemePickerProps) {
+  const dispatch = useAppDispatch();
+  const [openField, setOpenField] = useState<keyof ThemeColors | null>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!openField) return;
+    function handleClick(e: MouseEvent) {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target as Node)
+      ) {
+        setOpenField(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [openField]);
+
+  return (
+    <div className="theme-picker-card">
+      <div className="settings-row">
+        <div className="settings-copy">
+          <span className="settings-label">{label}</span>
+        </div>
+        <select
+          className="theme-select"
+          value={activeId}
+          onChange={(e) => dispatch(onSelectTheme(e.target.value))}
+        >
+          {themes.map((theme) => (
+            <option key={theme.id} value={theme.id}>
+              {theme.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {COLOR_FIELDS.map(({ key, label: fieldLabel }) => {
+        const value = colors[key];
+        const isOpen = openField === key;
+        return (
+          <div
+            key={`${popoverScope}-${key}`}
+            className="settings-row theme-color-row"
+          >
+            <span className="settings-label">{fieldLabel}</span>
+            <div className="theme-color-control">
+              <button
+                type="button"
+                className="theme-color-chip"
+                onClick={() => setOpenField(isOpen ? null : key)}
+              >
+                <span
+                  className="theme-color-chip-swatch"
+                  style={{ background: value }}
+                />
+                <span className="theme-color-chip-value">{value.toUpperCase()}</span>
+              </button>
+              {isOpen && (
+                <div
+                  className="theme-color-popover"
+                  ref={popoverRef}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ProjectColorPicker
+                    color={value}
+                    onChange={(next) => dispatch(onChangeColor(activeId, key, next))}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function SettingsView() {
   const dispatch = useAppDispatch();
-  const themeMode = useAppSelector((state) => state.themeMode);
-  const themeTemplate = useAppSelector((state) => state.themeTemplate);
-  const terminalTheme = useAppSelector((state) => state.terminalTheme);
+  const activeThemeId = useAppSelector((state) => state.activeThemeId);
+  const themeColors = useAppSelector((state) => state.themeColors);
+  const activeTerminalThemeId = useAppSelector((state) => state.activeTerminalThemeId);
+  const terminalBgColorOverride = useAppSelector(
+    (state) => state.terminalBackgroundColor,
+  );
+  const terminalBgImage = useAppSelector((state) => state.terminalBackgroundImage);
+  const terminalBgOpacity = useAppSelector(
+    (state) => state.terminalBackgroundOpacity,
+  );
+  const resolvedTerminalBgColor =
+    terminalBgColorOverride ?? getTerminalTheme(activeTerminalThemeId).theme.background;
+  const [terminalBgPickerOpen, setTerminalBgPickerOpen] = useState(false);
+  const terminalBgPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!terminalBgPickerOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (
+        terminalBgPickerRef.current &&
+        !terminalBgPickerRef.current.contains(e.target as Node)
+      ) {
+        setTerminalBgPickerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [terminalBgPickerOpen]);
   const uiFontSize = useAppSelector((state) => state.uiFontSize);
   const terminalFontSize = useAppSelector((state) => state.terminalFontSize);
   const projects = useAppSelector((state) => state.projects);
@@ -66,14 +171,37 @@ export function SettingsView() {
     | { kind: "error"; message: string }
   >({ kind: "idle" });
 
+  const appColors = getThemeColors(activeThemeId, themeColors);
+
   function adjustUiFontSize(delta: number) {
     const next = Math.min(24, Math.max(10, uiFontSize + delta));
     dispatch({ type: "SET_UI_FONT_SIZE", size: next });
   }
 
-  // Shared upload logic
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadTarget, setUploadTarget] = useState<{ type: "tool" | "editor"; id: string } | null>(null);
+  const terminalBgInputRef = useRef<HTMLInputElement>(null);
+
+  function handleTerminalBgUpload() {
+    terminalBgInputRef.current?.click();
+  }
+
+  function onTerminalBgSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      if (typeof dataUrl !== "string") return;
+      dispatch({ type: "SET_TERMINAL_BACKGROUND_IMAGE", image: dataUrl });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearTerminalBg() {
+    dispatch({ type: "SET_TERMINAL_BACKGROUND_IMAGE", image: null });
+  }
 
   function handleIconUpload(type: "tool" | "editor", id: string) {
     setUploadTarget({ type, id });
@@ -107,7 +235,6 @@ export function SettingsView() {
     e.target.value = "";
   }
 
-  // Tool handlers
   function addTool() {
     if (!newToolName.trim() || !newToolCmd.trim()) return;
     const tool: ToolConfig = {
@@ -135,7 +262,6 @@ export function SettingsView() {
     });
   }
 
-  // Editor handlers
   function addEditor() {
     if (!newEditorName.trim() || !newEditorCmd.trim()) return;
     const editor: EditorConfig = {
@@ -163,7 +289,6 @@ export function SettingsView() {
     });
   }
 
-  // Backup & restore handlers
   async function handleExportSettings() {
     setBackupStatus({ kind: "idle" });
     try {
@@ -173,9 +298,12 @@ export function SettingsView() {
         editors,
         uiFontSize,
         terminalFontSize,
-        themeMode,
-        themeTemplate,
-        terminalTheme,
+        activeThemeId,
+        themeColors,
+        activeTerminalThemeId,
+        terminalBackgroundColor: terminalBgColorOverride,
+        terminalBackgroundImage: terminalBgImage,
+        terminalBackgroundOpacity: terminalBgOpacity,
       });
       const home = await homeDir();
       const defaultPath = await join(home, defaultExportFileName());
@@ -237,150 +365,137 @@ export function SettingsView() {
       <div className="settings-section">
         <h3 className="settings-section-title">Appearance</h3>
 
-        <div className="settings-row settings-row-align-start">
-          <div className="settings-copy">
-            <span className="settings-label">Color Mode</span>
-            <span className="settings-help">
-              Follow the system, or force light or dark.
-            </span>
+        <ThemePicker
+          label="Application Theme"
+          themes={APP_THEMES}
+          activeId={activeThemeId}
+          colors={appColors}
+          onSelectTheme={(themeId) => ({ type: "SET_ACTIVE_THEME", themeId })}
+          onChangeColor={(themeId, key, value) => ({
+            type: "SET_THEME_COLOR",
+            themeId,
+            key,
+            value,
+          })}
+          popoverScope="app"
+        />
+
+        <div className="theme-picker-card">
+          <div className="settings-row">
+            <div className="settings-copy">
+              <span className="settings-label">Terminal Theme</span>
+            </div>
+            <select
+              className="theme-select"
+              value={activeTerminalThemeId}
+              onChange={(e) =>
+                dispatch({
+                  type: "SET_ACTIVE_TERMINAL_THEME",
+                  themeId: e.target.value,
+                })
+              }
+            >
+              {TERMINAL_THEMES.map((theme) => (
+                <option key={theme.id} value={theme.id}>
+                  {theme.name}
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="theme-mode-group">
-            {THEME_MODE_OPTIONS.map((option) => (
+
+          <div className="settings-row theme-color-row">
+            <span className="settings-label">Background Color</span>
+            <div className="theme-color-control">
               <button
-                key={option.value}
                 type="button"
-                aria-pressed={themeMode === option.value}
-                className={`theme-mode-btn${themeMode === option.value ? " active" : ""}`}
-                onClick={() =>
-                  dispatch({ type: "SET_THEME_MODE", mode: option.value })
-                }
+                className="theme-color-chip"
+                onClick={() => setTerminalBgPickerOpen((v) => !v)}
               >
-                {THEME_MODE_ICONS[option.value]}
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="settings-stack">
-          <div className="settings-copy">
-            <span className="settings-label">Template</span>
-            <span className="settings-help">
-              Templates define the palette for both light and dark variants.
-            </span>
-          </div>
-
-          <div className="theme-template-grid">
-            {THEME_TEMPLATES.map((template) => (
-              <button
-                key={template.id}
-                type="button"
-                aria-pressed={themeTemplate === template.id}
-                className={`theme-template-card${themeTemplate === template.id ? " active" : ""}`}
-                onClick={() =>
-                  dispatch({
-                    type: "SET_THEME_TEMPLATE",
-                    template: template.id,
-                  })
-                }
-              >
-                <div className="theme-template-preview" aria-hidden="true">
-                  <span className="theme-template-tone">
-                    <span
-                      className="theme-template-swatch"
-                      style={{ background: template.preview.light }}
-                    />
-                    <span className="theme-template-tone-label">Light</span>
-                  </span>
-                  <span className="theme-template-tone">
-                    <span
-                      className="theme-template-swatch"
-                      style={{ background: template.preview.dark }}
-                    />
-                    <span className="theme-template-tone-label">Dark</span>
-                  </span>
-                  <span className="theme-template-tone">
-                    <span
-                      className="theme-template-swatch"
-                      style={{ background: template.preview.accent }}
-                    />
-                    <span className="theme-template-tone-label">Accent</span>
-                  </span>
-                </div>
-
-                <div className="theme-template-name-row">
-                  <span className="theme-template-name">{template.name}</span>
-                  {themeTemplate === template.id && (
-                    <span className="theme-template-selected">Selected</span>
-                  )}
-                </div>
-
-                <span className="theme-template-description">
-                  {template.description}
+                <span
+                  className="theme-color-chip-swatch"
+                  style={{ background: resolvedTerminalBgColor }}
+                />
+                <span className="theme-color-chip-value">
+                  {resolvedTerminalBgColor.toUpperCase()}
                 </span>
               </button>
-            ))}
+              {terminalBgPickerOpen && (
+                <div
+                  className="theme-color-popover"
+                  ref={terminalBgPickerRef}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ProjectColorPicker
+                    color={resolvedTerminalBgColor}
+                    onChange={(next) =>
+                      dispatch({
+                        type: "SET_TERMINAL_BACKGROUND_COLOR",
+                        color: next,
+                      })
+                    }
+                  />
+                </div>
+              )}
+            </div>
           </div>
-        </div>
 
-        <div className="settings-stack">
-          <div className="settings-copy">
-            <span className="settings-label">Terminal Theme</span>
-            <span className="settings-help">
-              Color palette for terminal output and ANSI colors.
-            </span>
-          </div>
-
-          <div className="theme-template-grid">
-            {TERMINAL_THEMES.map((theme) => (
+          <div className="settings-row">
+            <span className="settings-label">Background Image</span>
+            <div className="terminal-bg-control">
+              <input
+                ref={terminalBgInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                style={{ display: "none" }}
+                onChange={onTerminalBgSelected}
+              />
+              <span
+                className="terminal-bg-thumb"
+                style={
+                  terminalBgImage
+                    ? { backgroundImage: `url("${terminalBgImage}")` }
+                    : undefined
+                }
+                aria-hidden="true"
+              />
               <button
-                key={theme.id}
                 type="button"
-                aria-pressed={terminalTheme === theme.id}
-                className={`theme-template-card${terminalTheme === theme.id ? " active" : ""}`}
-                onClick={() =>
+                className="terminal-bg-btn"
+                onClick={handleTerminalBgUpload}
+              >
+                {terminalBgImage ? "Replace" : "Upload"}
+              </button>
+              {terminalBgImage && (
+                <button
+                  type="button"
+                  className="terminal-bg-btn danger"
+                  onClick={clearTerminalBg}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="settings-row">
+            <span className="settings-label">Image Opacity</span>
+            <div className="opacity-slider-control">
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={terminalBgOpacity}
+                className="opacity-slider"
+                onChange={(e) =>
                   dispatch({
-                    type: "SET_TERMINAL_THEME",
-                    theme: theme.id,
+                    type: "SET_TERMINAL_BACKGROUND_OPACITY",
+                    opacity: Number(e.target.value),
                   })
                 }
-              >
-                <div className="theme-template-preview" aria-hidden="true">
-                  <span className="theme-template-tone">
-                    <span
-                      className="theme-template-swatch"
-                      style={{ background: theme.preview.background }}
-                    />
-                    <span className="theme-template-tone-label">BG</span>
-                  </span>
-                  <span className="theme-template-tone">
-                    <span
-                      className="theme-template-swatch"
-                      style={{ background: theme.preview.foreground }}
-                    />
-                    <span className="theme-template-tone-label">FG</span>
-                  </span>
-                  <span className="theme-template-tone">
-                    <span
-                      className="theme-template-swatch"
-                      style={{ background: theme.preview.accent }}
-                    />
-                    <span className="theme-template-tone-label">Accent</span>
-                  </span>
-                </div>
-
-                <div className="theme-template-name-row">
-                  <span className="theme-template-name">{theme.name}</span>
-                  {terminalTheme === theme.id && (
-                    <span className="theme-template-selected">Selected</span>
-                  )}
-                </div>
-
-                <span className="theme-template-description">
-                  {theme.description}
-                </span>
-              </button>
-            ))}
+              />
+              <span className="opacity-slider-value">{terminalBgOpacity}</span>
+            </div>
           </div>
         </div>
 

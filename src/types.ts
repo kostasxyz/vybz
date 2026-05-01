@@ -1,4 +1,4 @@
-import type { ThemeMode, ThemeTemplateId, TerminalThemeId } from "./themes";
+import type { ThemeColors } from "./themes";
 
 export const PROJECT_COLORS = [
   "#e06c75", "#e5c07b", "#98c379", "#56b6c2",
@@ -74,9 +74,12 @@ export interface AppState {
   editors: EditorConfig[];
   uiFontSize: number;
   terminalFontSize: number;
-  themeMode: ThemeMode;
-  themeTemplate: ThemeTemplateId;
-  terminalTheme: TerminalThemeId;
+  activeThemeId: string;
+  themeColors: Record<string, ThemeColors>;
+  activeTerminalThemeId: string;
+  terminalBackgroundColor: string | null;
+  terminalBackgroundImage: string | null;
+  terminalBackgroundOpacity: number;
   view: "terminals" | "settings" | "project-settings";
 }
 
@@ -95,9 +98,12 @@ export type Action =
   | { type: "SET_ACTIVE_TAB"; tabId: string | null }
   | { type: "SET_UI_FONT_SIZE"; size: number }
   | { type: "SET_TERMINAL_FONT_SIZE"; size: number }
-  | { type: "SET_THEME_MODE"; mode: ThemeMode }
-  | { type: "SET_THEME_TEMPLATE"; template: ThemeTemplateId }
-  | { type: "SET_TERMINAL_THEME"; theme: TerminalThemeId }
+  | { type: "SET_ACTIVE_THEME"; themeId: string }
+  | { type: "SET_THEME_COLOR"; themeId: string; key: keyof ThemeColors; value: string }
+  | { type: "SET_ACTIVE_TERMINAL_THEME"; themeId: string }
+  | { type: "SET_TERMINAL_BACKGROUND_COLOR"; color: string | null }
+  | { type: "SET_TERMINAL_BACKGROUND_IMAGE"; image: string | null }
+  | { type: "SET_TERMINAL_BACKGROUND_OPACITY"; opacity: number }
   | { type: "SET_TOOLS"; tools: ToolConfig[] }
   | { type: "SET_EDITORS"; editors: EditorConfig[] }
   | {
@@ -108,9 +114,12 @@ export type Action =
         editors: EditorConfig[];
         uiFontSize: number;
         terminalFontSize: number;
-        themeMode: ThemeMode;
-        themeTemplate: ThemeTemplateId;
-        terminalTheme: TerminalThemeId;
+        activeThemeId: string;
+        themeColors: Record<string, ThemeColors>;
+        activeTerminalThemeId: string;
+        terminalBackgroundColor: string | null;
+        terminalBackgroundImage: string | null;
+        terminalBackgroundOpacity: number;
       };
     }
   | { type: "SET_VIEW"; view: "terminals" | "settings" | "project-settings" };

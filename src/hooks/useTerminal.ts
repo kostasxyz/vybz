@@ -3,6 +3,8 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { invoke, Channel } from "@tauri-apps/api/core";
 import "@xterm/xterm/css/xterm.css";
+import { useAppSelector } from "../context";
+import { getTerminalTheme } from "../themes";
 
 const textEncoder = new TextEncoder();
 const FALLBACK_TERMINAL_FONT = 'Menlo, Monaco, "Courier New", monospace';
@@ -48,58 +50,6 @@ function normalizeProgrammaticInput(input: string) {
   return input.replace(/\r?\n/g, "\r");
 }
 
-function readThemeVariable(name: string, fallback: string) {
-  const value = getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim();
-
-  return value || fallback;
-}
-
-function syncTerminalAppearance(term: Terminal) {
-  const background = readThemeVariable("--terminal-background", "#1e1e1e");
-  const foreground = readThemeVariable("--terminal-foreground", "#d4d4d4");
-  const selectionBackground = readThemeVariable(
-    "--terminal-selection-background",
-    readThemeVariable("--surface-active", "rgba(128, 128, 128, 0.28)"),
-  );
-  const selectionInactiveBackground = readThemeVariable(
-    "--terminal-selection-inactive-background",
-    selectionBackground,
-  );
-
-  term.options.fontFamily = readThemeVariable("--font-mono", FALLBACK_TERMINAL_FONT);
-  term.options.theme = {
-    background,
-    foreground,
-    cursor: readThemeVariable("--terminal-cursor", foreground),
-    cursorAccent: readThemeVariable("--terminal-cursor-accent", background),
-    selectionBackground,
-    selectionInactiveBackground,
-    black: readThemeVariable("--terminal-ansi-black", "#000000"),
-    red: readThemeVariable("--terminal-ansi-red", "#cd3131"),
-    green: readThemeVariable("--terminal-ansi-green", "#0dbc79"),
-    yellow: readThemeVariable("--terminal-ansi-yellow", "#e5e510"),
-    blue: readThemeVariable("--terminal-ansi-blue", "#2472c8"),
-    magenta: readThemeVariable("--terminal-ansi-magenta", "#bc3fbc"),
-    cyan: readThemeVariable("--terminal-ansi-cyan", "#11a8cd"),
-    white: readThemeVariable("--terminal-ansi-white", "#e5e5e5"),
-    brightBlack: readThemeVariable("--terminal-ansi-bright-black", "#666666"),
-    brightRed: readThemeVariable("--terminal-ansi-bright-red", "#f14c4c"),
-    brightGreen: readThemeVariable("--terminal-ansi-bright-green", "#23d18b"),
-    brightYellow: readThemeVariable("--terminal-ansi-bright-yellow", "#f5f543"),
-    brightBlue: readThemeVariable("--terminal-ansi-bright-blue", "#3b8eea"),
-    brightMagenta: readThemeVariable(
-      "--terminal-ansi-bright-magenta",
-      "#d670d6",
-    ),
-    brightCyan: readThemeVariable("--terminal-ansi-bright-cyan", "#29b8db"),
-    brightWhite: readThemeVariable("--terminal-ansi-bright-white", "#ffffff"),
-  };
-
-  term.refresh(0, Math.max(term.rows - 1, 0));
-}
-
 interface UseTerminalOptions {
   command?: string;
   execCommand?: boolean;
@@ -136,6 +86,11 @@ export function useTerminal(
     options?.shiftEnterSequence ?? DEFAULT_SHIFT_ENTER_SEQUENCE;
   const hasStartupCommand = Boolean(options?.command);
   const [loadingStartup, setLoadingStartup] = useState(hasStartupCommand);
+  const terminalThemeId = useAppSelector((state) => state.activeTerminalThemeId);
+  const baseTerminalTheme = getTerminalTheme(terminalThemeId).theme;
+  // The chrome layer paints --terminal-background, so xterm itself must be
+  // fully transparent. This lets the optional background image show through.
+  const terminalTheme = { ...baseTerminalTheme, background: "rgba(0, 0, 0, 0)" };
 
   function flushInputBuffer() {
     const sessionId = sessionIdRef.current;
@@ -225,12 +180,13 @@ export function useTerminal(
       cursorBlink: true,
       fontSize: options?.fontSize ?? 15,
       fontFamily: FALLBACK_TERMINAL_FONT,
+      theme: terminalTheme,
+      allowTransparency: true,
     });
 
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
     term.open(container);
-    syncTerminalAppearance(term);
     fitAddon.fit();
     fitAddonRef.current = fitAddon;
     termRef.current = term;
@@ -349,24 +305,9 @@ export function useTerminal(
     });
     resizeObserver.observe(container);
 
-    const themeObserver = new MutationObserver(() => {
-      syncTerminalAppearance(term);
-      fitAddon.fit();
-    });
-    themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: [
-        "class",
-        "data-theme-mode",
-        "data-theme-template",
-        "data-terminal-theme",
-      ],
-    });
-
     return () => {
       alive = false;
       resizeObserver.disconnect();
-      themeObserver.disconnect();
       if (inputFlushTimerRef.current !== null) {
         window.clearTimeout(inputFlushTimerRef.current);
         inputFlushTimerRef.current = null;
@@ -395,6 +336,16 @@ export function useTerminal(
       fitAddonRef.current?.fit();
     }
   }, [options?.fontSize]);
+
+  // Reactive terminal theme updates (no respawn). baseTerminalTheme is a
+  // stable object reference per theme id, so this only fires when the user
+  // picks a different terminal theme.
+  useEffect(() => {
+    const term = termRef.current;
+    if (!term) return;
+    term.options.theme = { ...baseTerminalTheme, background: "rgba(0, 0, 0, 0)" };
+    term.refresh(0, Math.max(term.rows - 1, 0));
+  }, [baseTerminalTheme]);
 
   // Re-fit when becoming active (container goes from display:none to block)
   useEffect(() => {

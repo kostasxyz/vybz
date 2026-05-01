@@ -16,8 +16,8 @@ import {
 } from "./store";
 import {
   applyThemeToDocument,
+  getThemeColors,
   loadThemeSettingsSnapshot,
-  resolveThemeMode,
   saveThemeSettingsSnapshot,
 } from "./themes";
 
@@ -32,9 +32,12 @@ const initialState: AppState = {
   editors: DEFAULT_EDITORS,
   uiFontSize: 14,
   terminalFontSize: 15,
-  themeMode: initialThemeSettings.themeMode,
-  themeTemplate: initialThemeSettings.themeTemplate,
-  terminalTheme: initialThemeSettings.terminalTheme,
+  activeThemeId: initialThemeSettings.activeThemeId,
+  themeColors: initialThemeSettings.themeColors,
+  activeTerminalThemeId: initialThemeSettings.activeTerminalThemeId,
+  terminalBackgroundColor: initialThemeSettings.terminalBackgroundColor,
+  terminalBackgroundImage: initialThemeSettings.terminalBackgroundImage,
+  terminalBackgroundOpacity: initialThemeSettings.terminalBackgroundOpacity,
   view: "terminals",
 };
 
@@ -236,18 +239,43 @@ function reducer(state: AppState, action: Action): AppState {
       return state.terminalFontSize === action.size
         ? state
         : { ...state, terminalFontSize: action.size };
-    case "SET_THEME_MODE":
-      return state.themeMode === action.mode
+    case "SET_ACTIVE_THEME":
+      return state.activeThemeId === action.themeId
         ? state
-        : { ...state, themeMode: action.mode };
-    case "SET_THEME_TEMPLATE":
-      return state.themeTemplate === action.template
+        : { ...state, activeThemeId: action.themeId };
+    case "SET_THEME_COLOR": {
+      const current = getThemeColors(action.themeId, state.themeColors);
+      const next = { ...current, [action.key]: action.value };
+      return {
+        ...state,
+        themeColors: { ...state.themeColors, [action.themeId]: next },
+      };
+    }
+    case "SET_ACTIVE_TERMINAL_THEME":
+      // Picking a theme clears the user's bg color override so the new
+      // theme's default takes effect.
+      return state.activeTerminalThemeId === action.themeId &&
+        state.terminalBackgroundColor === null
         ? state
-        : { ...state, themeTemplate: action.template };
-    case "SET_TERMINAL_THEME":
-      return state.terminalTheme === action.theme
+        : {
+            ...state,
+            activeTerminalThemeId: action.themeId,
+            terminalBackgroundColor: null,
+          };
+    case "SET_TERMINAL_BACKGROUND_COLOR":
+      return state.terminalBackgroundColor === action.color
         ? state
-        : { ...state, terminalTheme: action.theme };
+        : { ...state, terminalBackgroundColor: action.color };
+    case "SET_TERMINAL_BACKGROUND_IMAGE":
+      return state.terminalBackgroundImage === action.image
+        ? state
+        : { ...state, terminalBackgroundImage: action.image };
+    case "SET_TERMINAL_BACKGROUND_OPACITY": {
+      const opacity = Math.min(100, Math.max(0, Math.round(action.opacity)));
+      return state.terminalBackgroundOpacity === opacity
+        ? state
+        : { ...state, terminalBackgroundOpacity: opacity };
+    }
     case "SET_TOOLS":
       return state.tools === action.tools
         ? state
@@ -267,9 +295,12 @@ function reducer(state: AppState, action: Action): AppState {
         editors: action.settings.editors,
         uiFontSize: action.settings.uiFontSize,
         terminalFontSize: action.settings.terminalFontSize,
-        themeMode: action.settings.themeMode,
-        themeTemplate: action.settings.themeTemplate,
-        terminalTheme: action.settings.terminalTheme,
+        activeThemeId: action.settings.activeThemeId,
+        themeColors: action.settings.themeColors,
+        activeTerminalThemeId: action.settings.activeTerminalThemeId,
+        terminalBackgroundColor: action.settings.terminalBackgroundColor,
+        terminalBackgroundImage: action.settings.terminalBackgroundImage,
+        terminalBackgroundOpacity: action.settings.terminalBackgroundOpacity,
         tabs: state.tabs.filter((tab) =>
           action.settings.projects.some((project) => project.id === tab.projectId),
         ),
@@ -292,9 +323,12 @@ function toPersistedState(state: AppState): PersistedState {
     editors: state.editors,
     uiFontSize: state.uiFontSize,
     terminalFontSize: state.terminalFontSize,
-    themeMode: state.themeMode,
-    themeTemplate: state.themeTemplate,
-    terminalTheme: state.terminalTheme,
+    activeThemeId: state.activeThemeId,
+    themeColors: state.themeColors,
+    activeTerminalThemeId: state.activeTerminalThemeId,
+    terminalBackgroundColor: state.terminalBackgroundColor,
+    terminalBackgroundImage: state.terminalBackgroundImage,
+    terminalBackgroundOpacity: state.terminalBackgroundOpacity,
   };
 }
 
@@ -398,51 +432,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [store]);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    let lastThemeKey = "";
-    let lastResolvedMode = "";
+    let lastSnapshot = "";
 
     const syncTheme = () => {
-      const { themeMode, themeTemplate, terminalTheme } = store.getState();
-      const themeSettings = { themeMode, themeTemplate, terminalTheme };
-      const resolvedMode = resolveThemeMode(themeMode, mediaQuery.matches);
-      const themeKey = `${themeTemplate}:${themeMode}:${terminalTheme}`;
+      const {
+        activeThemeId,
+        themeColors,
+        activeTerminalThemeId,
+        terminalBackgroundColor,
+        terminalBackgroundImage,
+        terminalBackgroundOpacity,
+      } = store.getState();
+      const themeSettings = {
+        activeThemeId,
+        themeColors,
+        activeTerminalThemeId,
+        terminalBackgroundColor,
+        terminalBackgroundImage,
+        terminalBackgroundOpacity,
+      };
+      const snapshot = JSON.stringify(themeSettings);
 
-      if (themeKey === lastThemeKey && resolvedMode === lastResolvedMode) {
-        return;
-      }
+      if (snapshot === lastSnapshot) return;
 
-      lastThemeKey = themeKey;
-      lastResolvedMode = resolvedMode;
-
-      applyThemeToDocument(themeSettings, mediaQuery.matches);
+      lastSnapshot = snapshot;
+      applyThemeToDocument(themeSettings);
       saveThemeSettingsSnapshot(themeSettings);
     };
 
     syncTheme();
-
-    const unsubscribe = store.subscribe(syncTheme);
-    const handleChange = () => {
-      if (store.getState().themeMode === "system") {
-        syncTheme();
-      }
-    };
-
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", handleChange);
-    } else {
-      mediaQuery.addListener(handleChange);
-    }
-
-    return () => {
-      unsubscribe();
-
-      if (typeof mediaQuery.removeEventListener === "function") {
-        mediaQuery.removeEventListener("change", handleChange);
-      } else {
-        mediaQuery.removeListener(handleChange);
-      }
-    };
+    return store.subscribe(syncTheme);
   }, [store]);
 
   useEffect(() => {

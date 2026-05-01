@@ -1,9 +1,8 @@
 <!doctype html>
 <html
   lang="en"
-  data-theme-template="native"
-  data-terminal-theme="night-owl"
-  data-theme-mode="dark"
+  data-theme-id="absolutely"
+  data-terminal-theme-id="xterm"
   class="dark"
 >
   <head>
@@ -13,57 +12,198 @@
     <title>Vybz</title>
     <script>
       (() => {
-        const defaults = {
-          themeMode: "dark",
-          themeTemplate: "native",
-          terminalTheme: "night-owl",
-        };
+        const APP_THEMES = [
+          {
+            id: "absolutely",
+            defaults: {
+              background: "#2D2D2B",
+              foreground: "#F9F9F7",
+              accent: "#CC7D5E",
+            },
+          },
+          {
+            id: "dracula",
+            defaults: {
+              background: "#282A36",
+              foreground: "#F8F8F2",
+              accent: "#FF79C6",
+            },
+          },
+          {
+            id: "ayu",
+            defaults: {
+              background: "#0B0E14",
+              foreground: "#BFBDB6",
+              accent: "#E6B450",
+            },
+          },
+          {
+            id: "rose-pine",
+            defaults: {
+              background: "#232136",
+              foreground: "#E0DEF4",
+              accent: "#EA9A97",
+            },
+          },
+          {
+            id: "matrix",
+            defaults: {
+              background: "#040805",
+              foreground: "#B8FFCA",
+              accent: "#1EFF5A",
+            },
+          },
+        ];
+        const TERMINAL_THEMES = [
+          {
+            id: "xterm",
+            background: "#000000",
+            foreground: "#ffffff",
+          },
+          {
+            id: "ayu",
+            background: "#0B0E14",
+            foreground: "#BFBDB6",
+          },
+          {
+            id: "dracula",
+            background: "#282A36",
+            foreground: "#F8F8F2",
+          },
+          {
+            id: "rose-pine",
+            background: "#191724",
+            foreground: "#E0DEF4",
+          },
+          {
+            id: "matrix",
+            background: "#0F191C",
+            foreground: "#426644",
+          },
+        ];
+
+        function parseHex(hex) {
+          let h = String(hex || "").trim().replace(/^#/, "");
+          if (/^[\da-fA-F]{3}$/.test(h)) {
+            h = h.split("").map((c) => c + c).join("");
+          }
+          if (!/^[\da-fA-F]{6}$/.test(h)) return null;
+          const n = parseInt(h, 16);
+          return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+        }
+        function toHex(r, g, b) {
+          const ch = (n) =>
+            Math.round(Math.min(255, Math.max(0, n)))
+              .toString(16)
+              .padStart(2, "0");
+          return `#${ch(r)}${ch(g)}${ch(b)}`;
+        }
+        function safeParse(hex, fb) {
+          return parseHex(hex) || parseHex(fb) || { r: 0, g: 0, b: 0 };
+        }
+        function mix(a, b, t) {
+          const A = safeParse(a, "#000000");
+          const B = safeParse(b, "#ffffff");
+          return toHex(
+            A.r + (B.r - A.r) * t,
+            A.g + (B.g - A.g) * t,
+            A.b + (B.b - A.b) * t,
+          );
+        }
+        function isLight(hex) {
+          const { r, g, b } = safeParse(hex, "#000000");
+          return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55;
+        }
+        function deriveAppTokens(c) {
+          const onAccent = isLight(c.accent) ? "#000000" : "#ffffff";
+          const dark = !isLight(c.background);
+          return {
+            "--background": c.background,
+            "--foreground": c.foreground,
+            "--card": mix(c.background, c.foreground, 0.04),
+            "--card-foreground": c.foreground,
+            "--popover": mix(c.background, c.foreground, 0.06),
+            "--popover-foreground": c.foreground,
+            "--primary": c.accent,
+            "--primary-foreground": onAccent,
+            "--secondary": mix(c.background, c.foreground, 0.08),
+            "--secondary-foreground": c.foreground,
+            "--muted": mix(c.background, c.foreground, 0.04),
+            "--muted-foreground": mix(c.foreground, c.background, 0.45),
+            "--accent": mix(c.background, c.foreground, 0.08),
+            "--accent-foreground": c.foreground,
+            "--border": mix(c.background, c.foreground, 0.14),
+            "--input": mix(c.background, c.foreground, 0.18),
+            "--ring": c.accent,
+            "--sidebar": c.background,
+            "--sidebar-foreground": mix(c.foreground, c.background, 0.3),
+            "--sidebar-primary": c.accent,
+            "--sidebar-primary-foreground": onAccent,
+            "--sidebar-accent": mix(c.background, c.foreground, 0.08),
+            "--sidebar-accent-foreground": c.foreground,
+            "--sidebar-border": mix(c.background, c.foreground, 0.1),
+            "--sidebar-ring": c.accent,
+            "--surface-hover": mix(c.background, c.foreground, 0.06),
+            "--surface-active": mix(c.background, c.foreground, 0.12),
+            "--surface-elevated": mix(c.background, c.foreground, 0.04),
+            "--surface-strong": mix(c.background, c.foreground, 0.16),
+            "--text-secondary": mix(c.foreground, c.background, 0.3),
+            "--text-muted": mix(c.foreground, c.background, 0.5),
+            "--text-on-accent": onAccent,
+            "--shadow-popover": dark
+              ? "0 4px 12px rgba(0, 0, 0, 0.5)"
+              : "0 4px 12px rgba(15, 23, 42, 0.15)",
+            "--shadow-floating": dark
+              ? "0 8px 24px rgba(0, 0, 0, 0.45)"
+              : "0 8px 24px rgba(15, 23, 42, 0.12)",
+            "_dark": dark,
+          };
+        }
 
         try {
           const raw = window.localStorage.getItem("vybz.theme");
           const parsed = raw ? JSON.parse(raw) : null;
-          const themeMode =
-            parsed?.themeMode === "system" ||
-            parsed?.themeMode === "light" ||
-            parsed?.themeMode === "dark"
-              ? parsed.themeMode
-              : defaults.themeMode;
-          const themeTemplate =
-            parsed?.themeTemplate === "native" ||
-            parsed?.themeTemplate === "amber" ||
-            parsed?.themeTemplate === "t3chat" ||
-            parsed?.themeTemplate === "solar-dusk" ||
-            parsed?.themeTemplate === "synthwave" ||
-            parsed?.themeTemplate === "purple" ||
-            parsed?.themeTemplate === "warp" ||
-            parsed?.themeTemplate === "emdash"
-              ? parsed.themeTemplate
-              : defaults.themeTemplate;
-          const terminalTheme =
-            parsed?.terminalTheme === "ayu" ||
-            parsed?.terminalTheme === "night-owl" ||
-            parsed?.terminalTheme === "solarized-light" ||
-            parsed?.terminalTheme === "solarized-dark" ||
-            parsed?.terminalTheme === "github-light" ||
-            parsed?.terminalTheme === "amber-light" ||
-            parsed?.terminalTheme === "tokyo-night" ||
-            parsed?.terminalTheme === "synthwave" ||
-            parsed?.terminalTheme === "warp" ||
-            parsed?.terminalTheme === "emdash"
-              ? parsed.terminalTheme
-              : defaults.terminalTheme;
-          const prefersDark =
-            themeMode === "system"
-              ? window.matchMedia("(prefers-color-scheme: dark)").matches
-              : themeMode === "dark";
-          const resolvedMode = prefersDark ? "dark" : "light";
           const root = document.documentElement;
 
-          root.dataset.themeTemplate = themeTemplate;
-          root.dataset.terminalTheme = terminalTheme;
-          root.dataset.themeMode = resolvedMode;
-          root.classList.toggle("dark", resolvedMode === "dark");
-          root.style.colorScheme = resolvedMode;
+          const appIds = APP_THEMES.map((t) => t.id);
+          const appId = parsed && appIds.indexOf(parsed.activeThemeId) !== -1
+            ? parsed.activeThemeId
+            : APP_THEMES[0].id;
+          const appTheme = APP_THEMES.find((t) => t.id === appId) || APP_THEMES[0];
+          const appOverrides = (parsed && parsed.themeColors && parsed.themeColors[appId]) || null;
+          const appColors = {
+            background: (appOverrides && appOverrides.background) || appTheme.defaults.background,
+            foreground: (appOverrides && appOverrides.foreground) || appTheme.defaults.foreground,
+            accent: (appOverrides && appOverrides.accent) || appTheme.defaults.accent,
+          };
+          const tokens = deriveAppTokens(appColors);
+          const dark = tokens["_dark"];
+          delete tokens["_dark"];
+          root.dataset.themeId = appId;
+          for (const [k, v] of Object.entries(tokens)) {
+            root.style.setProperty(k, v);
+          }
+          root.classList.toggle("dark", !!dark);
+          root.style.colorScheme = dark ? "dark" : "light";
+
+          const termIds = TERMINAL_THEMES.map((t) => t.id);
+          const termId = parsed && termIds.indexOf(parsed.activeTerminalThemeId) !== -1
+            ? parsed.activeTerminalThemeId
+            : TERMINAL_THEMES[0].id;
+          const termTheme = TERMINAL_THEMES.find((t) => t.id === termId) || TERMINAL_THEMES[0];
+          const termBgOverride = parsed && typeof parsed.terminalBackgroundColor === "string" && parsed.terminalBackgroundColor.length > 0
+            ? parsed.terminalBackgroundColor
+            : null;
+          root.dataset.terminalThemeId = termId;
+          root.style.setProperty("--terminal-background", termBgOverride || termTheme.background);
+          root.style.setProperty("--terminal-foreground", termTheme.foreground);
+
+          const opacity = parsed && typeof parsed.terminalBackgroundOpacity === "number"
+            ? Math.min(100, Math.max(0, parsed.terminalBackgroundOpacity))
+            : 33;
+          root.style.setProperty("--terminal-bg-opacity", String(opacity / 100));
+          // The background image itself is not stored in localStorage (it can
+          // be MBs); it's restored from the Tauri store after React hydrates.
         } catch {
           // Ignore bootstrap theme failures and let the app hydrate normally.
         }

@@ -6,12 +6,10 @@ import {
 } from "./types";
 import {
   DEFAULT_THEME_SETTINGS,
-  isThemeMode,
+  isAppThemeId,
   isTerminalThemeId,
-  isThemeTemplateId,
-  ThemeMode,
-  ThemeTemplateId,
-  TerminalThemeId,
+  ThemeColors,
+  normalizeThemeSettings,
 } from "./themes";
 
 export const EXPORT_SCHEMA_VERSION = 1;
@@ -26,9 +24,12 @@ export interface ExportPayload {
     editors: EditorConfig[];
     uiFontSize: number;
     terminalFontSize: number;
-    themeMode: ThemeMode;
-    themeTemplate: ThemeTemplateId;
-    terminalTheme: TerminalThemeId;
+    activeThemeId: string;
+    themeColors: Record<string, ThemeColors>;
+    activeTerminalThemeId: string;
+    terminalBackgroundColor: string | null;
+    terminalBackgroundImage: string | null;
+    terminalBackgroundOpacity: number;
   };
 }
 
@@ -40,9 +41,12 @@ interface BuildArgs {
   editors: EditorConfig[];
   uiFontSize: number;
   terminalFontSize: number;
-  themeMode: ThemeMode;
-  themeTemplate: ThemeTemplateId;
-  terminalTheme: TerminalThemeId;
+  activeThemeId: string;
+  themeColors: Record<string, ThemeColors>;
+  activeTerminalThemeId: string;
+  terminalBackgroundColor: string | null;
+  terminalBackgroundImage: string | null;
+  terminalBackgroundOpacity: number;
 }
 
 export function buildExportPayload(args: BuildArgs): ExportPayload {
@@ -56,9 +60,12 @@ export function buildExportPayload(args: BuildArgs): ExportPayload {
       editors: args.editors,
       uiFontSize: args.uiFontSize,
       terminalFontSize: args.terminalFontSize,
-      themeMode: args.themeMode,
-      themeTemplate: args.themeTemplate,
-      terminalTheme: args.terminalTheme,
+      activeThemeId: args.activeThemeId,
+      themeColors: args.themeColors,
+      activeTerminalThemeId: args.activeTerminalThemeId,
+      terminalBackgroundColor: args.terminalBackgroundColor,
+      terminalBackgroundImage: args.terminalBackgroundImage,
+      terminalBackgroundOpacity: args.terminalBackgroundOpacity,
     },
   };
 }
@@ -171,21 +178,44 @@ export function parseImportPayload(rawJson: string): ImportedSettings {
     throw new ImportError("Export file has invalid `editors` data.");
   }
 
+  const themeSettings = normalizeThemeSettings({
+    activeThemeId: isAppThemeId(settings.activeThemeId)
+      ? settings.activeThemeId
+      : DEFAULT_THEME_SETTINGS.activeThemeId,
+    themeColors: isStringRecord(settings.themeColors)
+      ? (settings.themeColors as Record<string, ThemeColors>)
+      : DEFAULT_THEME_SETTINGS.themeColors,
+    activeTerminalThemeId: isTerminalThemeId(settings.activeTerminalThemeId)
+      ? settings.activeTerminalThemeId
+      : DEFAULT_THEME_SETTINGS.activeTerminalThemeId,
+    terminalBackgroundColor:
+      typeof settings.terminalBackgroundColor === "string" &&
+      settings.terminalBackgroundColor.length > 0
+        ? settings.terminalBackgroundColor
+        : null,
+    terminalBackgroundImage:
+      typeof settings.terminalBackgroundImage === "string" &&
+      settings.terminalBackgroundImage.length > 0
+        ? settings.terminalBackgroundImage
+        : null,
+    terminalBackgroundOpacity:
+      typeof settings.terminalBackgroundOpacity === "number"
+        ? settings.terminalBackgroundOpacity
+        : DEFAULT_THEME_SETTINGS.terminalBackgroundOpacity,
+  });
+
   return {
     projects: projectsRaw,
     tools: toolsRaw,
     editors: editorsRaw,
     uiFontSize: clampFontSize(settings.uiFontSize, 14, 10, 24),
     terminalFontSize: clampFontSize(settings.terminalFontSize, 15, 10, 28),
-    themeMode: isThemeMode(settings.themeMode)
-      ? settings.themeMode
-      : DEFAULT_THEME_SETTINGS.themeMode,
-    themeTemplate: isThemeTemplateId(settings.themeTemplate)
-      ? settings.themeTemplate
-      : DEFAULT_THEME_SETTINGS.themeTemplate,
-    terminalTheme: isTerminalThemeId(settings.terminalTheme)
-      ? settings.terminalTheme
-      : DEFAULT_THEME_SETTINGS.terminalTheme,
+    activeThemeId: themeSettings.activeThemeId,
+    themeColors: themeSettings.themeColors,
+    activeTerminalThemeId: themeSettings.activeTerminalThemeId,
+    terminalBackgroundColor: themeSettings.terminalBackgroundColor,
+    terminalBackgroundImage: themeSettings.terminalBackgroundImage,
+    terminalBackgroundOpacity: themeSettings.terminalBackgroundOpacity,
   };
 }
 

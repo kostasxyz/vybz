@@ -30,7 +30,6 @@ function mergeWithDefaults<T extends { id: string; builtin?: boolean }>(
 ): T[] {
   if (!stored || stored.length === 0) return defaults;
   const defaultsById = new Map(defaults.map((d) => [d.id, d]));
-  // Stamp builtin on any stored item that matches a default
   const patched = stored.map((item) => {
     const def = defaultsById.get(item.id);
     return def ? { ...def, ...item, builtin: true } : item;
@@ -51,9 +50,12 @@ type PersistedState = Pick<
   | "editors"
   | "uiFontSize"
   | "terminalFontSize"
-  | "themeMode"
-  | "themeTemplate"
-  | "terminalTheme"
+  | "activeThemeId"
+  | "themeColors"
+  | "activeTerminalThemeId"
+  | "terminalBackgroundColor"
+  | "terminalBackgroundImage"
+  | "terminalBackgroundOpacity"
 >;
 
 const DEFAULT_PERSISTED_STATE: PersistedState = {
@@ -64,9 +66,12 @@ const DEFAULT_PERSISTED_STATE: PersistedState = {
   editors: DEFAULT_EDITORS,
   uiFontSize: 14,
   terminalFontSize: 15,
-  themeMode: DEFAULT_THEME_SETTINGS.themeMode,
-  themeTemplate: DEFAULT_THEME_SETTINGS.themeTemplate,
-  terminalTheme: DEFAULT_THEME_SETTINGS.terminalTheme,
+  activeThemeId: DEFAULT_THEME_SETTINGS.activeThemeId,
+  themeColors: DEFAULT_THEME_SETTINGS.themeColors,
+  activeTerminalThemeId: DEFAULT_THEME_SETTINGS.activeTerminalThemeId,
+  terminalBackgroundColor: DEFAULT_THEME_SETTINGS.terminalBackgroundColor,
+  terminalBackgroundImage: DEFAULT_THEME_SETTINGS.terminalBackgroundImage,
+  terminalBackgroundOpacity: DEFAULT_THEME_SETTINGS.terminalBackgroundOpacity,
 };
 
 let storePromise: ReturnType<typeof load> | null = null;
@@ -89,27 +94,35 @@ export async function loadPersistedState(): Promise<PersistedState> {
     editors,
     uiFontSize,
     terminalFontSize,
-    themeMode,
-    themeTemplate,
-    terminalTheme,
-  ] =
-    await Promise.all([
-      store.get<PersistedState["projects"]>("projects"),
-      store.get<PersistedState["tabs"]>("tabs"),
-      store.get<PersistedState["activeTabId"]>("activeTabId"),
-      store.get<PersistedState["tools"]>("tools"),
-      store.get<PersistedState["editors"]>("editors"),
-      store.get<PersistedState["uiFontSize"]>("uiFontSize"),
-      store.get<PersistedState["terminalFontSize"]>("terminalFontSize"),
-      store.get<PersistedState["themeMode"]>("themeMode"),
-      store.get<PersistedState["themeTemplate"]>("themeTemplate"),
-      store.get<PersistedState["terminalTheme"]>("terminalTheme"),
-    ]);
+    activeThemeId,
+    themeColors,
+    activeTerminalThemeId,
+    terminalBackgroundColor,
+    terminalBackgroundImage,
+    terminalBackgroundOpacity,
+  ] = await Promise.all([
+    store.get<PersistedState["projects"]>("projects"),
+    store.get<PersistedState["tabs"]>("tabs"),
+    store.get<PersistedState["activeTabId"]>("activeTabId"),
+    store.get<PersistedState["tools"]>("tools"),
+    store.get<PersistedState["editors"]>("editors"),
+    store.get<PersistedState["uiFontSize"]>("uiFontSize"),
+    store.get<PersistedState["terminalFontSize"]>("terminalFontSize"),
+    store.get<PersistedState["activeThemeId"]>("activeThemeId"),
+    store.get<PersistedState["themeColors"]>("themeColors"),
+    store.get<PersistedState["activeTerminalThemeId"]>("activeTerminalThemeId"),
+    store.get<PersistedState["terminalBackgroundColor"]>("terminalBackgroundColor"),
+    store.get<PersistedState["terminalBackgroundImage"]>("terminalBackgroundImage"),
+    store.get<PersistedState["terminalBackgroundOpacity"]>("terminalBackgroundOpacity"),
+  ]);
 
   const normalizedThemeSettings = normalizeThemeSettings({
-    themeMode,
-    themeTemplate,
-    terminalTheme,
+    activeThemeId,
+    themeColors,
+    activeTerminalThemeId,
+    terminalBackgroundColor,
+    terminalBackgroundImage,
+    terminalBackgroundOpacity,
   });
 
   return {
@@ -121,9 +134,12 @@ export async function loadPersistedState(): Promise<PersistedState> {
     uiFontSize: uiFontSize ?? DEFAULT_PERSISTED_STATE.uiFontSize,
     terminalFontSize:
       terminalFontSize ?? DEFAULT_PERSISTED_STATE.terminalFontSize,
-    themeMode: normalizedThemeSettings.themeMode,
-    themeTemplate: normalizedThemeSettings.themeTemplate,
-    terminalTheme: normalizedThemeSettings.terminalTheme,
+    activeThemeId: normalizedThemeSettings.activeThemeId,
+    themeColors: normalizedThemeSettings.themeColors,
+    activeTerminalThemeId: normalizedThemeSettings.activeTerminalThemeId,
+    terminalBackgroundColor: normalizedThemeSettings.terminalBackgroundColor,
+    terminalBackgroundImage: normalizedThemeSettings.terminalBackgroundImage,
+    terminalBackgroundOpacity: normalizedThemeSettings.terminalBackgroundOpacity,
   };
 }
 
@@ -138,9 +154,12 @@ export async function savePersistedState(state: PersistedState): Promise<void> {
     store.set("editors", state.editors),
     store.set("uiFontSize", state.uiFontSize),
     store.set("terminalFontSize", state.terminalFontSize),
-    store.set("themeMode", state.themeMode),
-    store.set("themeTemplate", state.themeTemplate),
-    store.set("terminalTheme", state.terminalTheme),
+    store.set("activeThemeId", state.activeThemeId),
+    store.set("themeColors", state.themeColors),
+    store.set("activeTerminalThemeId", state.activeTerminalThemeId),
+    store.set("terminalBackgroundColor", state.terminalBackgroundColor),
+    store.set("terminalBackgroundImage", state.terminalBackgroundImage),
+    store.set("terminalBackgroundOpacity", state.terminalBackgroundOpacity),
   ]);
 
   await store.save();

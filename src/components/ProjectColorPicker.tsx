@@ -8,7 +8,7 @@ interface HsvColor {
 
 interface ProjectColorPickerProps {
   color: string;
-  presets: readonly string[];
+  presets?: readonly string[];
   onChange: (color: string) => void;
   onPresetSelect?: () => void;
 }
@@ -196,25 +196,27 @@ export function ProjectColorPicker({
 
   return (
     <>
-      <div className="color-swatches">
-        {presets.map((preset) => (
-          <button
-            key={preset}
-            type="button"
-            className={`color-swatch ${preset === currentHex ? "active" : ""}`}
-            style={{ background: preset }}
-            onClick={() => {
-              const nextColor = normalizeHexColor(preset);
-              if (!nextColor) {
-                return;
-              }
+      {presets && presets.length > 0 && (
+        <div className="color-swatches">
+          {presets.map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              className={`color-swatch ${preset === currentHex ? "active" : ""}`}
+              style={{ background: preset }}
+              onClick={() => {
+                const nextColor = normalizeHexColor(preset);
+                if (!nextColor) {
+                  return;
+                }
 
-              commitColor(hexToHsv(nextColor));
-              onPresetSelect?.();
-            }}
-          />
-        ))}
-      </div>
+                commitColor(hexToHsv(nextColor));
+                onPresetSelect?.();
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="color-picker-editor">
         <div
