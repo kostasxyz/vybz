@@ -111,6 +111,7 @@ body,
 .project-item.active {
   background: var(--surface-active);
   border-color: var(--project-item-indicator-color, var(--sidebar-primary));
+  border-radius: var(--radius-sm);
 }
 
 .project-badge-wrapper {
