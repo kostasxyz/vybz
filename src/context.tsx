@@ -69,6 +69,7 @@ function resolveActiveProjectId(
 }
 
 function resolveActiveTabId(
+  projects: AppState["projects"],
   tabs: AppState["tabs"],
   activeTabId: string | null,
   activeProjectId: string | null,
@@ -80,6 +81,16 @@ function resolveActiveTabId(
   const activeProjectTabs = tabs.filter((tab) => tab.projectId === activeProjectId);
   if (activeProjectTabs.length === 0) {
     return null;
+  }
+
+  const activeProject = projects.find((project) => project.id === activeProjectId);
+  const lastProjectTabId = activeProject?.lastActiveTabId ?? null;
+  const matchingProjectTab = lastProjectTabId
+    ? activeProjectTabs.find((tab) => tab.id === lastProjectTabId) ?? null
+    : null;
+
+  if (matchingProjectTab) {
+    return matchingProjectTab.id;
   }
 
   const matchingTab = activeTabId
@@ -94,7 +105,12 @@ function normalizeState(state: AppState): AppState {
     state.projects,
     state.activeProjectId,
   );
-  const activeTabId = resolveActiveTabId(state.tabs, state.activeTabId, activeProjectId);
+  const activeTabId = resolveActiveTabId(
+    state.projects,
+    state.tabs,
+    state.activeTabId,
+    activeProjectId,
+  );
 
   if (
     activeProjectId === state.activeProjectId &&
@@ -186,6 +202,11 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         tabs: [...state.tabs, action.tab],
         activeTabId: action.tab.id,
+        projects: state.projects.map((project) =>
+          project.id === action.tab.projectId
+            ? { ...project, lastActiveTabId: action.tab.id }
+            : project,
+        ),
       };
     case "REMOVE_TAB": {
       const index = state.tabs.findIndex((tab) => tab.id === action.tabId);
@@ -207,6 +228,18 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         tabs: nextTabs,
         activeTabId: nextActiveTabId,
+        projects: state.projects.map((project) => {
+          if (project.lastActiveTabId !== action.tabId) {
+            return project;
+          }
+
+          const siblings = nextTabs.filter((tab) => tab.projectId === project.id);
+          return {
+            ...project,
+            lastActiveTabId:
+              siblings.length > 0 ? siblings[siblings.length - 1].id : null,
+          };
+        }),
       };
     }
     case "RENAME_TAB": {
@@ -228,9 +261,23 @@ function reducer(state: AppState, action: Action): AppState {
       return changed ? { ...state, tabs } : state;
     }
     case "SET_ACTIVE_TAB":
-      return state.activeTabId === action.tabId
-        ? state
-        : { ...state, activeTabId: action.tabId };
+      if (state.activeTabId === action.tabId) {
+        return state;
+      }
+
+      return {
+        ...state,
+        activeTabId: action.tabId,
+        projects: state.projects.map((project) => {
+          const tabProjectId = action.tabId
+            ? state.tabs.find((tab) => tab.id === action.tabId)?.projectId ?? null
+            : null;
+
+          return tabProjectId === project.id
+            ? { ...project, lastActiveTabId: action.tabId }
+            : project;
+        }),
+      };
     case "SET_UI_FONT_SIZE":
       return state.uiFontSize === action.size
         ? state

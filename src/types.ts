@@ -49,6 +49,7 @@ export interface Project {
   name: string;
   color: string;
   commands?: ProjectCommand[];
+  lastActiveTabId?: string | null;
 }
 
 export interface Tab {

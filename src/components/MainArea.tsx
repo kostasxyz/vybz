@@ -74,16 +74,6 @@ export function MainArea() {
     return map;
   }, [tabs]);
 
-  const tabProjectIdById = useMemo(() => {
-    const map = new Map<string, string>();
-
-    for (const tab of tabs) {
-      map.set(tab.id, tab.projectId);
-    }
-
-    return map;
-  }, [tabs]);
-
   const activeProjectTabs = activeProjectId
     ? tabsByProjectId.get(activeProjectId) ?? EMPTY_TABS
     : EMPTY_TABS;
@@ -168,29 +158,6 @@ export function MainArea() {
     },
     [activeProjectId, runCommand],
   );
-
-  useEffect(() => {
-    if (!activeProjectId || activeProjectTabs.length === 0) {
-      return;
-    }
-
-    const currentTabProjectId = activeTabId
-      ? tabProjectIdById.get(activeTabId) ?? null
-      : null;
-
-    if (currentTabProjectId !== activeProjectId) {
-      const lastTab = activeProjectTabs[activeProjectTabs.length - 1];
-      if (lastTab) {
-        dispatch({ type: "SET_ACTIVE_TAB", tabId: lastTab.id });
-      }
-    }
-  }, [
-    activeProjectId,
-    activeProjectTabs,
-    activeTabId,
-    dispatch,
-    tabProjectIdById,
-  ]);
 
   const handleKeyDown = useEffectEvent((event: KeyboardEvent) => {
     const meta = event.metaKey || event.ctrlKey;
