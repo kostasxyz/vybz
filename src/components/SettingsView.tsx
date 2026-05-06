@@ -22,6 +22,10 @@ import {
   parseImportPayload,
   serializeExportPayload,
 } from "../exportImport";
+import {
+  TERMINAL_FONT_STACKS,
+  getTerminalFontFamily,
+} from "../terminalFonts";
 
 const COLOR_FIELDS: Array<{ key: keyof ThemeColors; label: string }> = [
   { key: "accent", label: "Accent" },
@@ -158,6 +162,9 @@ export function SettingsView() {
   }, [terminalBgPickerOpen]);
   const uiFontSize = useAppSelector((state) => state.uiFontSize);
   const terminalFontSize = useAppSelector((state) => state.terminalFontSize);
+  const terminalFontFamily = useAppSelector(
+    (state) => state.terminalFontFamily,
+  );
   const projects = useAppSelector((state) => state.projects);
   const tools = useAppSelector((state) => state.tools);
   const editors = useAppSelector((state) => state.editors);
@@ -176,6 +183,11 @@ export function SettingsView() {
   function adjustUiFontSize(delta: number) {
     const next = Math.min(24, Math.max(10, uiFontSize + delta));
     dispatch({ type: "SET_UI_FONT_SIZE", size: next });
+  }
+
+  function adjustTerminalFontSize(delta: number) {
+    const next = Math.min(28, Math.max(8, terminalFontSize + delta));
+    dispatch({ type: "SET_TERMINAL_FONT_SIZE", size: next });
   }
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -298,6 +310,7 @@ export function SettingsView() {
         editors,
         uiFontSize,
         terminalFontSize,
+        terminalFontFamily,
         activeThemeId,
         themeColors,
         activeTerminalThemeId,
@@ -518,6 +531,60 @@ export function SettingsView() {
               className="font-size-btn"
               onClick={() => adjustUiFontSize(1)}
               disabled={uiFontSize >= 24}
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-copy">
+            <span className="settings-label">Terminal Font</span>
+          </div>
+          <select
+            className="theme-select terminal-font-select"
+            value={terminalFontFamily}
+            onChange={(e) =>
+              dispatch({
+                type: "SET_TERMINAL_FONT_FAMILY",
+                fontFamily: e.target.value as typeof terminalFontFamily,
+              })
+            }
+          >
+            {TERMINAL_FONT_STACKS.map((font) => (
+              <option key={font.id} value={font.id}>
+                {font.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-copy">
+            <span className="settings-label">Terminal Font Size</span>
+          </div>
+          <div className="font-size-control">
+            <button
+              type="button"
+              className="font-size-btn"
+              onClick={() => adjustTerminalFontSize(-1)}
+              disabled={terminalFontSize <= 8}
+            >
+              -
+            </button>
+            <span
+              className="font-size-value terminal-font-preview"
+              style={{
+                fontFamily: getTerminalFontFamily(terminalFontFamily).family,
+              }}
+            >
+              {terminalFontSize}
+            </span>
+            <button
+              type="button"
+              className="font-size-btn"
+              onClick={() => adjustTerminalFontSize(1)}
+              disabled={terminalFontSize >= 28}
             >
               +
             </button>

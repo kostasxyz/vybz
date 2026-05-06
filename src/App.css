@@ -1162,6 +1162,14 @@ body,
   color: var(--foreground);
 }
 
+.terminal-font-select {
+  min-width: 190px;
+}
+
+.terminal-font-preview {
+  font-size: 13px;
+}
+
 /* Command list (project settings) */
 .command-list {
   margin-bottom: 16px;

@@ -20,6 +20,7 @@ import {
   loadThemeSettingsSnapshot,
   saveThemeSettingsSnapshot,
 } from "./themes";
+import { DEFAULT_TERMINAL_FONT_FAMILY_ID } from "./terminalFonts";
 
 const initialThemeSettings = loadThemeSettingsSnapshot();
 
@@ -32,6 +33,7 @@ const initialState: AppState = {
   editors: DEFAULT_EDITORS,
   uiFontSize: 14,
   terminalFontSize: 15,
+  terminalFontFamily: DEFAULT_TERMINAL_FONT_FAMILY_ID,
   activeThemeId: initialThemeSettings.activeThemeId,
   themeColors: initialThemeSettings.themeColors,
   activeTerminalThemeId: initialThemeSettings.activeTerminalThemeId,
@@ -286,6 +288,10 @@ function reducer(state: AppState, action: Action): AppState {
       return state.terminalFontSize === action.size
         ? state
         : { ...state, terminalFontSize: action.size };
+    case "SET_TERMINAL_FONT_FAMILY":
+      return state.terminalFontFamily === action.fontFamily
+        ? state
+        : { ...state, terminalFontFamily: action.fontFamily };
     case "SET_ACTIVE_THEME":
       return state.activeThemeId === action.themeId
         ? state
@@ -342,6 +348,7 @@ function reducer(state: AppState, action: Action): AppState {
         editors: action.settings.editors,
         uiFontSize: action.settings.uiFontSize,
         terminalFontSize: action.settings.terminalFontSize,
+        terminalFontFamily: action.settings.terminalFontFamily,
         activeThemeId: action.settings.activeThemeId,
         themeColors: action.settings.themeColors,
         activeTerminalThemeId: action.settings.activeTerminalThemeId,
@@ -370,6 +377,7 @@ function toPersistedState(state: AppState): PersistedState {
     editors: state.editors,
     uiFontSize: state.uiFontSize,
     terminalFontSize: state.terminalFontSize,
+    terminalFontFamily: state.terminalFontFamily,
     activeThemeId: state.activeThemeId,
     themeColors: state.themeColors,
     activeTerminalThemeId: state.activeTerminalThemeId,

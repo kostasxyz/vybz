@@ -12,6 +12,7 @@ interface TerminalPanelsProps {
   projectPathsById: ReadonlyMap<string, string>;
   showTerminals: boolean;
   tabs: Tab[];
+  terminalFontFamily: string;
   terminalFontSize: number;
   tools: ToolConfig[];
   onCloseTab: (tabId: string) => void;
@@ -22,6 +23,7 @@ export const TerminalPanels = memo(function TerminalPanels({
   projectPathsById,
   showTerminals,
   tabs,
+  terminalFontFamily,
   terminalFontSize,
   tools,
   onCloseTab,
@@ -52,6 +54,7 @@ export const TerminalPanels = memo(function TerminalPanels({
             label={tab.label}
             onClose={() => onCloseTab(tab.id)}
             shiftEnterSequence={shiftEnterSequence}
+            terminalFontFamily={terminalFontFamily}
             terminalFontSize={terminalFontSize}
           />
         );

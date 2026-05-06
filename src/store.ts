@@ -1,6 +1,10 @@
 import { load } from "@tauri-apps/plugin-store";
 import { AppState, EditorConfig, ToolConfig } from "./types";
 import { DEFAULT_THEME_SETTINGS, normalizeThemeSettings } from "./themes";
+import {
+  DEFAULT_TERMINAL_FONT_FAMILY_ID,
+  isTerminalFontFamilyId,
+} from "./terminalFonts";
 
 export const DEFAULT_TOOLS: ToolConfig[] = [
   { id: "shell", name: "Shell", builtin: true, enabled: true },
@@ -50,6 +54,7 @@ type PersistedState = Pick<
   | "editors"
   | "uiFontSize"
   | "terminalFontSize"
+  | "terminalFontFamily"
   | "activeThemeId"
   | "themeColors"
   | "activeTerminalThemeId"
@@ -66,6 +71,7 @@ const DEFAULT_PERSISTED_STATE: PersistedState = {
   editors: DEFAULT_EDITORS,
   uiFontSize: 14,
   terminalFontSize: 15,
+  terminalFontFamily: DEFAULT_TERMINAL_FONT_FAMILY_ID,
   activeThemeId: DEFAULT_THEME_SETTINGS.activeThemeId,
   themeColors: DEFAULT_THEME_SETTINGS.themeColors,
   activeTerminalThemeId: DEFAULT_THEME_SETTINGS.activeTerminalThemeId,
@@ -94,6 +100,7 @@ export async function loadPersistedState(): Promise<PersistedState> {
     editors,
     uiFontSize,
     terminalFontSize,
+    terminalFontFamily,
     activeThemeId,
     themeColors,
     activeTerminalThemeId,
@@ -108,6 +115,7 @@ export async function loadPersistedState(): Promise<PersistedState> {
     store.get<PersistedState["editors"]>("editors"),
     store.get<PersistedState["uiFontSize"]>("uiFontSize"),
     store.get<PersistedState["terminalFontSize"]>("terminalFontSize"),
+    store.get<PersistedState["terminalFontFamily"]>("terminalFontFamily"),
     store.get<PersistedState["activeThemeId"]>("activeThemeId"),
     store.get<PersistedState["themeColors"]>("themeColors"),
     store.get<PersistedState["activeTerminalThemeId"]>("activeTerminalThemeId"),
@@ -134,6 +142,9 @@ export async function loadPersistedState(): Promise<PersistedState> {
     uiFontSize: uiFontSize ?? DEFAULT_PERSISTED_STATE.uiFontSize,
     terminalFontSize:
       terminalFontSize ?? DEFAULT_PERSISTED_STATE.terminalFontSize,
+    terminalFontFamily: isTerminalFontFamilyId(terminalFontFamily)
+      ? terminalFontFamily
+      : DEFAULT_PERSISTED_STATE.terminalFontFamily,
     activeThemeId: normalizedThemeSettings.activeThemeId,
     themeColors: normalizedThemeSettings.themeColors,
     activeTerminalThemeId: normalizedThemeSettings.activeTerminalThemeId,
@@ -154,6 +165,7 @@ export async function savePersistedState(state: PersistedState): Promise<void> {
     store.set("editors", state.editors),
     store.set("uiFontSize", state.uiFontSize),
     store.set("terminalFontSize", state.terminalFontSize),
+    store.set("terminalFontFamily", state.terminalFontFamily),
     store.set("activeThemeId", state.activeThemeId),
     store.set("themeColors", state.themeColors),
     store.set("activeTerminalThemeId", state.activeTerminalThemeId),

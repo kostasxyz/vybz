@@ -11,6 +11,11 @@ import {
   ThemeColors,
   normalizeThemeSettings,
 } from "./themes";
+import {
+  DEFAULT_TERMINAL_FONT_FAMILY_ID,
+  TerminalFontFamilyId,
+  isTerminalFontFamilyId,
+} from "./terminalFonts";
 
 export const EXPORT_SCHEMA_VERSION = 1;
 
@@ -24,6 +29,7 @@ export interface ExportPayload {
     editors: EditorConfig[];
     uiFontSize: number;
     terminalFontSize: number;
+    terminalFontFamily: TerminalFontFamilyId;
     activeThemeId: string;
     themeColors: Record<string, ThemeColors>;
     activeTerminalThemeId: string;
@@ -41,6 +47,7 @@ interface BuildArgs {
   editors: EditorConfig[];
   uiFontSize: number;
   terminalFontSize: number;
+  terminalFontFamily: TerminalFontFamilyId;
   activeThemeId: string;
   themeColors: Record<string, ThemeColors>;
   activeTerminalThemeId: string;
@@ -60,6 +67,7 @@ export function buildExportPayload(args: BuildArgs): ExportPayload {
       editors: args.editors,
       uiFontSize: args.uiFontSize,
       terminalFontSize: args.terminalFontSize,
+      terminalFontFamily: args.terminalFontFamily,
       activeThemeId: args.activeThemeId,
       themeColors: args.themeColors,
       activeTerminalThemeId: args.activeTerminalThemeId,
@@ -210,6 +218,9 @@ export function parseImportPayload(rawJson: string): ImportedSettings {
     editors: editorsRaw,
     uiFontSize: clampFontSize(settings.uiFontSize, 14, 10, 24),
     terminalFontSize: clampFontSize(settings.terminalFontSize, 15, 10, 28),
+    terminalFontFamily: isTerminalFontFamilyId(settings.terminalFontFamily)
+      ? settings.terminalFontFamily
+      : DEFAULT_TERMINAL_FONT_FAMILY_ID,
     activeThemeId: themeSettings.activeThemeId,
     themeColors: themeSettings.themeColors,
     activeTerminalThemeId: themeSettings.activeTerminalThemeId,

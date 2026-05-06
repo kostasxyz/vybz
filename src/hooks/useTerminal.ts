@@ -5,9 +5,9 @@ import { invoke, Channel } from "@tauri-apps/api/core";
 import "@xterm/xterm/css/xterm.css";
 import { useAppSelector } from "../context";
 import { getTerminalTheme } from "../themes";
+import { getTerminalFontFamily } from "../terminalFonts";
 
 const textEncoder = new TextEncoder();
-const FALLBACK_TERMINAL_FONT = 'Menlo, Monaco, "Courier New", monospace';
 const STARTUP_COMMAND_IDLE_MS = 120;
 const STARTUP_COMMAND_FALLBACK_MS = 400;
 const STARTUP_REVEAL_FALLBACK_MS = 3000;
@@ -54,6 +54,7 @@ interface UseTerminalOptions {
   command?: string;
   execCommand?: boolean;
   fontSize?: number;
+  fontFamily?: string;
   /**
    * Bytes to emit when the user presses Shift+Enter. Defaults to
    * `\x1b\r` (legacy Alt+Enter), which most Ink-based TUIs (Claude Code,
@@ -179,7 +180,8 @@ export function useTerminal(
     const term = new Terminal({
       cursorBlink: true,
       fontSize: options?.fontSize ?? 15,
-      fontFamily: FALLBACK_TERMINAL_FONT,
+      fontFamily:
+        options?.fontFamily ?? getTerminalFontFamily("default").family,
       theme: terminalTheme,
       allowTransparency: true,
     });
@@ -336,6 +338,15 @@ export function useTerminal(
       fitAddonRef.current?.fit();
     }
   }, [options?.fontSize]);
+
+  // Reactive font family updates (no respawn)
+  useEffect(() => {
+    const term = termRef.current;
+    if (term && options?.fontFamily) {
+      term.options.fontFamily = options.fontFamily;
+      fitAddonRef.current?.fit();
+    }
+  }, [options?.fontFamily]);
 
   // Reactive terminal theme updates (no respawn). baseTerminalTheme is a
   // stable object reference per theme id, so this only fires when the user

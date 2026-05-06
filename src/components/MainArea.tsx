@@ -12,6 +12,7 @@ import { TabBar } from "./TabBar";
 import { SettingsView } from "./SettingsView";
 import { ProjectSettingsView } from "./ProjectSettingsView";
 import { ProjectEmptyState } from "./ProjectEmptyState";
+import { getTerminalFontFamily } from "../terminalFonts";
 
 const TerminalPanels = lazy(async () => ({
   default: (await import("./TerminalPanels")).TerminalPanels,
@@ -34,6 +35,9 @@ export function MainArea() {
   const projects = useAppSelector((state) => state.projects);
   const tabs = useAppSelector((state) => state.tabs);
   const terminalFontSize = useAppSelector((state) => state.terminalFontSize);
+  const terminalFontFamilyId = useAppSelector(
+    (state) => state.terminalFontFamily,
+  );
   const tools = useAppSelector((state) => state.tools);
   const editors = useAppSelector((state) => state.editors);
   const view = useAppSelector((state) => state.view);
@@ -218,6 +222,7 @@ export function MainArea() {
   const showTerminals = view === "terminals";
   const activeProjectCommands = activeProject?.commands ?? EMPTY_COMMANDS;
   const showTerminalPanels = showTerminals && activeProjectTabs.length > 0;
+  const terminalFontFamily = getTerminalFontFamily(terminalFontFamilyId).family;
 
   return (
     <div className="main-area">
@@ -260,6 +265,7 @@ export function MainArea() {
             projectPathsById={projectPathsById}
             showTerminals={showTerminalPanels}
             tabs={tabs}
+            terminalFontFamily={terminalFontFamily}
             terminalFontSize={terminalFontSize}
             tools={tools}
           />
