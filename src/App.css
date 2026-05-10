@@ -111,7 +111,8 @@ body,
 .project-item.active {
   background: var(--surface-active);
   border-color: var(--project-item-indicator-color, var(--sidebar-primary));
-  border-radius: var(--radius-sm);
+  border-left-color: transparent;
+  border-right-color: transparent;
 }
 
 .project-badge-wrapper {
@@ -704,14 +705,17 @@ body,
 .tab {
   display: flex;
   align-items: center;
-  padding: 0 28px;
+  padding: 0 34px 0 14px;
   height: 100%;
+  min-width: 132px;
+  max-width: 220px;
   font-size: 13px;
   color: var(--text-secondary);
   cursor: pointer;
   border-right: 1px solid var(--sidebar-border);
   white-space: nowrap;
   transition: background 0.1s;
+  position: relative;
 }
 
 .tab:hover {
@@ -731,7 +735,8 @@ body,
 }
 
 .tab-label {
-  margin-right: 24px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tab-rename-input {
@@ -743,8 +748,8 @@ body,
   font-family: inherit;
   padding: 1px 4px;
   outline: none;
-  width: 80px;
-  margin-right: 8px;
+  width: 100%;
+  min-width: 0;
 }
 
 .tab-rename-input:focus {
@@ -752,6 +757,10 @@ body,
 }
 
 .tab-close {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
   color: var(--text-muted);
