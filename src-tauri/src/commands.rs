@@ -46,7 +46,12 @@ pub fn kill_terminal(
 
 #[tauri::command]
 pub fn open_in_editor(editor: String, path: String) -> Result<(), String> {
-    Command::new("/bin/zsh")
+    // Run through the user's login shell so GUI-launched apps inherit the full
+    // PATH (Homebrew, manually installed CLIs like VS Code's `code`, etc.).
+    // `/bin/zsh` is macOS-only; fall back to `/bin/sh` which exists on every
+    // Unix so the launcher also works on Linux. Mirrors pty_manager.rs.
+    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
+    Command::new(&shell)
         .arg("-l")
         .arg("-c")
         .arg(format!("{} \"$@\"", editor))
@@ -54,7 +59,7 @@ pub fn open_in_editor(editor: String, path: String) -> Result<(), String> {
         .arg(&path)
         .spawn()
         .map(|_| ())
-        .map_err(|e| format!("Failed to open {}: {}", editor, e))
+        .map_err(|e| format!("Failed to open {} via {}: {}", editor, shell, e))
 }
 
 #[tauri::command]
