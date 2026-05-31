@@ -9,6 +9,9 @@
   --terminal-foreground: #ffffff;
   --terminal-bg-image: none;
   --terminal-bg-opacity: 0.33;
+  --scrollbar-size: 6px;
+  --scrollbar-thumb: color-mix(in srgb, var(--foreground) 22%, transparent);
+  --scrollbar-thumb-hover: color-mix(in srgb, var(--foreground) 42%, transparent);
 }
 
 
@@ -85,6 +88,25 @@ body,
 .project-list {
   flex: 1;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+.project-list::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+}
+
+.project-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.project-list::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: calc(var(--scrollbar-size) / 2);
+}
+
+.project-list::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }
 
 .project-item {
@@ -435,12 +457,23 @@ body,
   z-index: 1;
 }
 
+/* Inset the fit parent instead of padding: FitAddon measures this element's
+   width/height and only subtracts padding on .xterm itself. Padding here made
+   cols/rows too large (text under the scrollbar, bottom rows clipped). */
 .terminal-container {
   position: absolute;
-  inset: 0;
-  padding: 12px;
+  top: 12px;
+  right: 12px;
+  bottom: 32px;
+  left: 12px;
+  overflow: hidden;
   background: transparent;
   box-sizing: border-box;
+}
+
+.terminal-container .xterm {
+  width: 100%;
+  height: 100%;
 }
 
 /* Override xterm.css's opaque viewport so the bg image (and the chrome's
@@ -449,6 +482,41 @@ body,
 .terminal-container .xterm .xterm-viewport,
 .terminal-container .xterm .xterm-screen {
   background-color: transparent !important;
+}
+
+/* overviewRuler.width drives scrollbar size; hide the decoration lane itself. */
+.terminal-container .xterm-decoration-overview-ruler {
+  display: none !important;
+}
+
+/* xterm v6 still mounts an empty .xterm-viewport with overflow-y: scroll, which
+   draws the wide native macOS track behind our custom scrollbar. */
+.terminal-container .xterm .xterm-viewport {
+  overflow: hidden !important;
+  scrollbar-width: none;
+}
+
+.terminal-container .xterm .xterm-viewport::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.terminal-container .xterm .xterm-scrollable-element > .scrollbar.vertical {
+  width: var(--scrollbar-size) !important;
+  max-width: var(--scrollbar-size) !important;
+  border-radius: calc(var(--scrollbar-size) / 2);
+  overflow: hidden;
+}
+
+.terminal-container
+  .xterm
+  .xterm-scrollable-element
+  > .scrollbar.vertical
+  > .slider {
+  width: var(--scrollbar-size) !important;
+  left: 0 !important;
+  border-radius: calc(var(--scrollbar-size) / 2);
 }
 
 .terminal-startup-overlay {

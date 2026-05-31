@@ -11,6 +11,8 @@ const textEncoder = new TextEncoder();
 const STARTUP_COMMAND_IDLE_MS = 120;
 const STARTUP_COMMAND_FALLBACK_MS = 400;
 const STARTUP_REVEAL_FALLBACK_MS = 3000;
+/** xterm uses overviewRuler.width for scrollbar sizing (FitAddon too). Default is 14. */
+const TERMINAL_SCROLLBAR_WIDTH = 6;
 
 // DEC private mode sequence for switching to the alternate screen buffer
 // (ESC [ ? 1 0 4 9 h). TUI tools like Claude Code, Codex, etc. emit this
@@ -184,14 +186,37 @@ export function useTerminal(
         options?.fontFamily ?? getTerminalFontFamily("default").family,
       theme: terminalTheme,
       allowTransparency: true,
+      overviewRuler: {
+        width: TERMINAL_SCROLLBAR_WIDTH,
+        showTopBorder: false,
+        showBottomBorder: false,
+      },
     });
 
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
     term.open(container);
-    fitAddon.fit();
     fitAddonRef.current = fitAddon;
     termRef.current = term;
+
+    // The first fit() can measure cell size before the (OS-installed) terminal
+    // font is resolved by the renderer. Once the real glyph metrics land the
+    // cells grow, and without a re-fit the row/col count stays too high — the
+    // bottom rows and right column spill past the container (bottom cutoff and
+    // text drawn over the scrollbar). Re-fit once fonts settle to correct it.
+    function refitAfterLayout() {
+      fitAddonRef.current?.fit();
+      requestAnimationFrame(() => {
+        if (alive) fitAddonRef.current?.fit();
+      });
+    }
+
+    refitAfterLayout();
+    if (document.fonts?.ready) {
+      void document.fonts.ready.then(() => {
+        if (alive) refitAfterLayout();
+      });
+    }
 
     term.attachCustomKeyEventHandler((event) => {
       if (
