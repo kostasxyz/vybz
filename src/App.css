@@ -31,6 +31,8 @@ body,
 .app {
   display: flex;
   height: 100vh;
+  box-sizing: border-box;
+  border-top: 1px solid var(--sidebar-border);
 }
 
 .loading-screen {
@@ -135,6 +137,30 @@ body,
   border-color: var(--project-item-indicator-color, var(--sidebar-primary));
   border-left-color: transparent;
   border-right-color: transparent;
+}
+
+.project-item.dragging {
+  opacity: 0.4;
+}
+
+.project-item.drop-above::before,
+.project-item.drop-below::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--project-item-indicator-color, var(--sidebar-primary));
+  pointer-events: none;
+  z-index: 1;
+}
+
+.project-item.drop-above::before {
+  top: -1px;
+}
+
+.project-item.drop-below::after {
+  bottom: -1px;
 }
 
 .project-badge-wrapper {

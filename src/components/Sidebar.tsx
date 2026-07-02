@@ -12,8 +12,21 @@ export function Sidebar() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [colorPickerId, setColorPickerId] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ id: string; below: boolean } | null>(
+    null,
+  );
   const editInputRef = useRef<HTMLInputElement>(null);
   const colorPickerRef = useRef<HTMLDivElement>(null);
+  const projectListRef = useRef<HTMLDivElement>(null);
+  const dragStateRef = useRef<{
+    id: string;
+    pointerId: number;
+    startY: number;
+    dragging: boolean;
+  } | null>(null);
+  const dropTargetRef = useRef<typeof dropTarget>(null);
+  const suppressClickRef = useRef(false);
 
   useEffect(() => {
     if (editingId && editInputRef.current) {
@@ -69,6 +82,158 @@ export function Sidebar() {
     setEditingId(null);
   }
 
+  function moveProject(fromId: string, toId: string, below: boolean) {
+    if (fromId === toId) return;
+    const fromIndex = projects.findIndex((p) => p.id === fromId);
+    if (fromIndex === -1) return;
+
+    const next = [...projects];
+    const [moved] = next.splice(fromIndex, 1);
+    let toIndex = next.findIndex((p) => p.id === toId);
+    if (toIndex === -1) return;
+    if (below) toIndex += 1;
+    next.splice(toIndex, 0, moved);
+
+    if (next.every((p, i) => p.id === projects[i].id)) return;
+    dispatch({ type: "SET_PROJECTS", projects: next });
+  }
+
+  function getDropTarget(clientY: number, draggedId: string) {
+    const list = projectListRef.current;
+    if (!list) return null;
+
+    const items = Array.from(
+      list.querySelectorAll<HTMLElement>("[data-project-id]"),
+    )
+      .map((element) => ({
+        element,
+        id: element.dataset.projectId,
+        rect: element.getBoundingClientRect(),
+      }))
+      .filter((item): item is {
+        element: HTMLElement;
+        id: string;
+        rect: DOMRect;
+      } => Boolean(item.id) && item.id !== draggedId);
+
+    if (items.length === 0) return null;
+
+    for (const item of items) {
+      if (clientY >= item.rect.top && clientY <= item.rect.bottom) {
+        return {
+          id: item.id,
+          below: clientY > item.rect.top + item.rect.height / 2,
+        };
+      }
+    }
+
+    const first = items[0];
+    const last = items[items.length - 1];
+
+    if (clientY < first.rect.top) {
+      return { id: first.id, below: false };
+    }
+
+    if (clientY > last.rect.bottom) {
+      return { id: last.id, below: true };
+    }
+
+    return null;
+  }
+
+  function updateDropTarget(nextTarget: typeof dropTarget) {
+    dropTargetRef.current = nextTarget;
+    setDropTarget((prev) =>
+      prev?.id === nextTarget?.id && prev?.below === nextTarget?.below
+        ? prev
+        : nextTarget,
+    );
+  }
+
+  function resetDragState() {
+    dragStateRef.current = null;
+    dropTargetRef.current = null;
+    setDraggingId(null);
+    setDropTarget(null);
+  }
+
+  function handleProjectPointerDown(id: string, e: React.PointerEvent<HTMLDivElement>) {
+    if (editingId === id || e.button !== 0) return;
+
+    const target = e.target instanceof Element ? e.target : null;
+    if (target?.closest("button, input, .project-badge, .color-picker")) {
+      return;
+    }
+
+    dragStateRef.current = {
+      id,
+      pointerId: e.pointerId,
+      startY: e.clientY,
+      dragging: false,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function handleProjectPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const dragState = dragStateRef.current;
+    if (!dragState || dragState.pointerId !== e.pointerId) return;
+
+    if (!dragState.dragging) {
+      const distance = Math.abs(e.clientY - dragState.startY);
+      if (distance < 4) return;
+
+      dragState.dragging = true;
+      setDraggingId(dragState.id);
+      setColorPickerId(null);
+    }
+
+    e.preventDefault();
+    updateDropTarget(getDropTarget(e.clientY, dragState.id));
+  }
+
+  function handleProjectPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    const dragState = dragStateRef.current;
+    if (!dragState || dragState.pointerId !== e.pointerId) return;
+
+    const wasDragging = dragState.dragging;
+    const target = dropTargetRef.current;
+
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+
+    resetDragState();
+
+    if (!wasDragging) return;
+
+    suppressClickRef.current = true;
+    window.setTimeout(() => {
+      suppressClickRef.current = false;
+    }, 0);
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (target) {
+      moveProject(dragState.id, target.id, target.below);
+    }
+  }
+
+  function handleProjectPointerCancel(e: React.PointerEvent<HTMLDivElement>) {
+    if (dragStateRef.current?.pointerId !== e.pointerId) return;
+    resetDragState();
+  }
+
+  function handleProjectClick(id: string, e: React.MouseEvent) {
+    if (suppressClickRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    selectProject(id);
+  }
+
   function toggleSettings() {
     dispatch({
       type: "SET_VIEW",
@@ -84,18 +249,34 @@ export function Sidebar() {
           +
         </button>
       </div>
-      <div className="project-list">
+      <div className="project-list" ref={projectListRef}>
         {projects.map((project) => (
           <div
             key={project.id}
-            className={`project-item ${activeProjectId === project.id ? "active" : ""}`}
+            data-project-id={project.id}
+            className={[
+              "project-item",
+              activeProjectId === project.id ? "active" : "",
+              draggingId === project.id ? "dragging" : "",
+              dropTarget?.id === project.id
+                ? dropTarget.below
+                  ? "drop-below"
+                  : "drop-above"
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             style={
               {
                 "--project-item-indicator-color": project.color || "#61afef",
               } as CSSProperties
             }
-            onClick={() => selectProject(project.id)}
+            onClick={(e) => handleProjectClick(project.id, e)}
             onDoubleClick={(e) => startRename(project.id, project.name, e)}
+            onPointerDown={(e) => handleProjectPointerDown(project.id, e)}
+            onPointerMove={handleProjectPointerMove}
+            onPointerUp={handleProjectPointerUp}
+            onPointerCancel={handleProjectPointerCancel}
           >
             <div className="project-item-top">
               <div className="project-badge-wrapper">

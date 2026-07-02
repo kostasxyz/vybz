@@ -15,7 +15,7 @@ pnpm tauri dev
 # Build production app
 pnpm tauri build
 
-# Frontend-only dev server (port 1420)
+# Frontend-only dev server (port 1430)
 pnpm dev
 
 # Type-check + build frontend
