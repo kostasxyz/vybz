@@ -11,13 +11,17 @@ export const PROJECT_COLORS = [
  * How a tool interprets Shift+Enter bytes coming from the terminal.
  *
  * - `legacyAltEnter` (default): send `\x1b\r` (ESC + CR). TUIs that treat
- *   Alt+Enter as "insert newline" (Claude Code, Codex, OpenCode, …) accept
- *   this.
+ *   Alt+Enter as "insert newline" (Claude Code, OpenCode, …) accept this;
+ *   it's also what Claude Code's /terminal-setup binds in VS Code/iTerm2,
+ *   and zsh maps it to self-insert-unmeta (newline) in plain shells.
  * - `modifyOtherKeys`: send `\x1b[27;2;13~` (xterm modifyOtherKeys encoding
  *   of Shift+Enter). Required by tools that distinguish Shift+Enter from
  *   Alt+Enter, e.g. Pi — its Alt+Enter is bound to "Queue follow-up".
+ * - `ctrlJ`: send `\n` (0x0A). Protocol-independent "insert newline" that
+ *   every agent CLI binds; used for Codex, whose Alt+Enter handling has
+ *   regressed before under crossterm's kitty-protocol mode.
  */
-export type ShiftEnterMode = "legacyAltEnter" | "modifyOtherKeys";
+export type ShiftEnterMode = "legacyAltEnter" | "modifyOtherKeys" | "ctrlJ";
 
 export interface ToolConfig {
   id: string;

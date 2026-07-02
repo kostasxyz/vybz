@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { invoke, Channel } from "@tauri-apps/api/core";
+import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import "@xterm/xterm/css/xterm.css";
 import { useAppSelector } from "../context";
 import { getTerminalTheme } from "../themes";
@@ -59,16 +60,89 @@ interface UseTerminalOptions {
   fontFamily?: string;
   /**
    * Bytes to emit when the user presses Shift+Enter. Defaults to
-   * `\x1b\r` (legacy Alt+Enter), which most Ink-based TUIs (Claude Code,
-   * Codex, OpenCode) treat as "insert newline". Tools that require the
-   * xterm modifyOtherKeys encoding (e.g. Pi) override via their
-   * `ToolConfig.shiftEnterMode`.
+   * `\x1b\r` (legacy Alt+Enter), which Claude Code, OpenCode, and zsh
+   * treat as "insert newline". Tools that need a different encoding
+   * (Pi → modifyOtherKeys, Codex → Ctrl+J) override via their
+   * `ToolConfig.shiftEnterMode`; see `shiftEnterSequenceForMode`.
    */
   shiftEnterSequence?: string;
   onExit?: () => void;
 }
 
 const DEFAULT_SHIFT_ENTER_SEQUENCE = "\x1b\r";
+
+// Native clipboard conventions per platform: Cmd+C/V/A on macOS,
+// Ctrl+Shift+C/V/A (GNOME/Windows Terminal style) plus the classic
+// Ctrl+Insert / Shift+Insert pair everywhere else. Plain Ctrl+C/A must
+// keep reaching the PTY (SIGINT, beginning-of-line, tmux prefix, …).
+const IS_MAC = navigator.platform.toUpperCase().includes("MAC");
+
+function isCopyShortcut(event: KeyboardEvent) {
+  if (IS_MAC) {
+    return (
+      event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !event.shiftKey &&
+      event.key.toLowerCase() === "c"
+    );
+  }
+  return (
+    (event.ctrlKey &&
+      event.shiftKey &&
+      !event.altKey &&
+      !event.metaKey &&
+      event.key.toLowerCase() === "c") ||
+    (event.ctrlKey &&
+      !event.shiftKey &&
+      !event.altKey &&
+      !event.metaKey &&
+      event.key === "Insert")
+  );
+}
+
+function isPasteShortcut(event: KeyboardEvent) {
+  if (IS_MAC) {
+    return (
+      event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !event.shiftKey &&
+      event.key.toLowerCase() === "v"
+    );
+  }
+  return (
+    (event.ctrlKey &&
+      event.shiftKey &&
+      !event.altKey &&
+      !event.metaKey &&
+      event.key.toLowerCase() === "v") ||
+    (event.shiftKey &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !event.metaKey &&
+      event.key === "Insert")
+  );
+}
+
+function isSelectAllShortcut(event: KeyboardEvent) {
+  if (IS_MAC) {
+    return (
+      event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !event.shiftKey &&
+      event.key.toLowerCase() === "a"
+    );
+  }
+  return (
+    event.ctrlKey &&
+    event.shiftKey &&
+    !event.altKey &&
+    !event.metaKey &&
+    event.key.toLowerCase() === "a"
+  );
+}
 
 export function useTerminal(
   containerRef: React.RefObject<HTMLDivElement | null>,
@@ -219,8 +293,11 @@ export function useTerminal(
     }
 
     term.attachCustomKeyEventHandler((event) => {
+      if (event.type !== "keydown") {
+        return true;
+      }
+
       if (
-        event.type === "keydown" &&
         event.key === "Enter" &&
         event.shiftKey &&
         !event.ctrlKey &&
@@ -231,6 +308,38 @@ export function useTerminal(
         queueInput(shiftEnterSequenceRef.current);
         return false;
       }
+
+      if (isCopyShortcut(event)) {
+        // preventDefault also suppresses the macOS Edit-menu accelerator,
+        // so the copy happens exactly once and only through this path.
+        event.preventDefault();
+        const selection = term.getSelection();
+        if (selection) {
+          void writeText(selection).catch(() => {});
+        }
+        return false;
+      }
+
+      if (isPasteShortcut(event)) {
+        event.preventDefault();
+        void readText()
+          .then((text) => {
+            if (text) {
+              // paste() respects bracketed paste mode and normalizes
+              // newlines, then feeds term.onData → queueInput → PTY.
+              term.paste(text);
+            }
+          })
+          .catch(() => {});
+        return false;
+      }
+
+      if (isSelectAllShortcut(event)) {
+        event.preventDefault();
+        term.selectAll();
+        return false;
+      }
+
       return true;
     });
 

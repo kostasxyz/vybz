@@ -46,7 +46,7 @@ State management uses **useReducer + React Context** — no external state libra
 - `themes.ts` — Theme registry and helpers: UI template metadata, mode resolution, DOM application, and localStorage snapshot/bootstrap support.
 - `context.tsx` — `AppProvider` wraps the app, holds the reducer, hydrates from store on mount, auto-persists app state, and applies the resolved theme to the document.
 - `store.ts` — Thin wrapper around `@tauri-apps/plugin-store`, all persisted UI/project state lives in a single `projects.json` store file.
-- `hooks/useTerminal.ts` — Manages xterm.js Terminal lifecycle: spawns PTY via Tauri IPC, bridges input/output through `Channel<Vec<u8>>`, handles resize via `ResizeObserver` + `FitAddon`, syncs xterm colors/fonts from CSS theme variables, and delays startup tool commands until shell output settles.
+- `hooks/useTerminal.ts` — Manages xterm.js Terminal lifecycle: spawns PTY via Tauri IPC, bridges input/output through `Channel<Vec<u8>>`, handles resize via `ResizeObserver` + `FitAddon`, syncs xterm colors/fonts from CSS theme variables, and delays startup tool commands until shell output settles. Its custom key handler owns platform-native clipboard shortcuts (Cmd+C/V/A on macOS; Ctrl+Shift+C/V/A and Ctrl/Shift+Insert elsewhere, via the clipboard-manager plugin) and Shift+Enter → per-tool newline sequence (`shiftEnterSequenceForTool` in `tool-resolution.ts`).
 
 Components:
 - `App.tsx` — Wraps `AppProvider` → `Sidebar` + `MainArea`
@@ -61,7 +61,7 @@ Components:
 
 ### Backend (`src-tauri/src/`)
 
-- `lib.rs` — Tauri app setup: registers plugins (opener, store, dialog), manages `PtyManager` as app state, registers IPC commands, kills all PTYs on window destroy.
+- `lib.rs` — Tauri app setup: registers plugins (opener, store, dialog, clipboard-manager), manages `PtyManager` as app state, registers IPC commands, kills all PTYs on window destroy.
 - `commands.rs` — Five `#[tauri::command]` functions: `spawn_terminal`, `write_to_terminal`, `resize_terminal`, `kill_terminal`, `open_in_editor`.
 - `pty_manager.rs` — `PtyManager` struct with `Mutex<HashMap<String, Session>>`. Each session holds a PTY master, writer, child process, and reader thread that streams output back to frontend via Tauri `Channel`.
 

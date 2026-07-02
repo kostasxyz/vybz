@@ -9,7 +9,14 @@ import {
 export const DEFAULT_TOOLS: ToolConfig[] = [
   { id: "shell", name: "Shell", builtin: true, enabled: true },
   { id: "claude", name: "Claude", cmd: "claude", builtin: true, enabled: true },
-  { id: "codex", name: "Codex", cmd: "codex", builtin: true, enabled: true },
+  {
+    id: "codex",
+    name: "Codex",
+    cmd: "codex",
+    builtin: true,
+    enabled: true,
+    shiftEnterMode: "ctrlJ",
+  },
   { id: "opencode", name: "OpenCode", cmd: "opencode", builtin: true, enabled: true },
   {
     id: "pi",

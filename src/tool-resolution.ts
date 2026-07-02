@@ -61,10 +61,17 @@ const LEGACY_ALT_ENTER_SEQUENCE = "\x1b\r";
 // MODIFIERS.shift)`.
 const MODIFY_OTHER_KEYS_SHIFT_ENTER_SEQUENCE = "\x1b[27;2;13~";
 
+// Bare line feed (Ctrl+J). Every agent CLI (Claude Code, Codex, OpenCode,
+// Pi, droid) documents Ctrl+J as "insert newline", and a single control
+// byte can never be mis-parsed regardless of keyboard-protocol state.
+const CTRL_J_SEQUENCE = "\n";
+
 export function shiftEnterSequenceForMode(mode: ShiftEnterMode): string {
   switch (mode) {
     case "modifyOtherKeys":
       return MODIFY_OTHER_KEYS_SHIFT_ENTER_SEQUENCE;
+    case "ctrlJ":
+      return CTRL_J_SEQUENCE;
     case "legacyAltEnter":
     default:
       return LEGACY_ALT_ENTER_SEQUENCE;
